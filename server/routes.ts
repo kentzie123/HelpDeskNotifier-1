@@ -104,6 +104,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(ticket);
   });
 
+  // Delete ticket
+  app.delete("/api/tickets/:id", async (req, res) => {
+    try {
+      const ticketId = req.params.id;
+      const deleted = await storage.deleteTicket(ticketId);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error(`Error deleting ticket: ${error}`);
+      res.status(500).json({ error: "Failed to delete ticket" });
+    }
+  });
+
   // Create new user
   app.post("/api/users", async (req, res) => {
     try {

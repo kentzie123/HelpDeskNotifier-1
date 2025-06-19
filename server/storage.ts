@@ -14,6 +14,7 @@ export interface IStorage {
   getTicket(id: string): Promise<Ticket | undefined>;
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket | undefined>;
+  deleteTicket(id: string): Promise<boolean>;
   
   // Notifications
   getNotifications(userId: number): Promise<Notification[]>;
@@ -465,6 +466,10 @@ export class MemStorage implements IStorage {
     const updatedTicket = { ...ticket, ...updates, updatedAt: new Date() };
     this.tickets.set(ticketId, updatedTicket);
     return updatedTicket;
+  }
+
+  async deleteTicket(ticketId: string): Promise<boolean> {
+    return this.tickets.delete(ticketId);
   }
 
   async getNotifications(userId: number): Promise<Notification[]> {

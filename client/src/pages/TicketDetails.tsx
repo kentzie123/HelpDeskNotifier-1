@@ -11,16 +11,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Edit, MessageCircle, Clock, CheckCircle } from "lucide-react";
+import { ArrowLeft, Edit, MessageCircle, Clock, CheckCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { TicketWithAssignee } from "@shared/schema";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import EditTicketForm from "@/components/forms/EditTicketForm";
 
 export default function TicketDetails() {
   const [match, params] = useRoute("/tickets/:id");
   const [showEditForm, setShowEditForm] = useState(false);
+  const [, setLocation] = useLocation();
   const ticketId = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -65,6 +66,30 @@ export default function TicketDetails() {
         ticketId,
         updates: { priority: newPriority }
       });
+    }
+  };
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: (ticketId: string) => apiRequest("DELETE", `/api/tickets/${ticketId}`),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+      setLocation("/tickets");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete ticket",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteTicket = () => {
+    if (ticket && confirm(`Are you sure you want to delete ticket ${ticket.ticketId}? This action cannot be undone.`)) {
+      deleteTicketMutation.mutate(ticket.ticketId);
     }
   };
 
@@ -237,6 +262,15 @@ export default function TicketDetails() {
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Ticket
+              </Button>
+              <Button 
+                variant="destructive" 
+                className="w-full"
+                onClick={handleDeleteTicket}
+                disabled={deleteTicketMutation.isPending}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {deleteTicketMutation.isPending ? "Deleting..." : "Delete Ticket"}
               </Button>
               <Button variant="outline" className="w-full">
                 <MessageCircle className="mr-2 h-4 w-4" />

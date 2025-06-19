@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Search } from "lucide-react";
+import { Plus, Eye, Edit, Search, Trash2 } from "lucide-react";
 import type { TicketWithAssignee } from "@shared/schema";
 import { Link } from "wouter";
 import NewTicketForm from "@/components/forms/NewTicketForm";
@@ -61,6 +63,32 @@ export default function Tickets() {
   const handleEditTicket = (ticket: TicketWithAssignee) => {
     setEditingTicket(ticket);
     setShowEditTicketForm(true);
+  };
+
+  const { toast } = useToast();
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: (ticketId: string) => apiRequest("DELETE", `/api/tickets/${ticketId}`),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete ticket",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteTicket = (ticket: TicketWithAssignee) => {
+    if (confirm(`Are you sure you want to delete ticket ${ticket.ticketId}? This action cannot be undone.`)) {
+      deleteTicketMutation.mutate(ticket.ticketId);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -236,6 +264,14 @@ export default function Tickets() {
                           onClick={() => handleEditTicket(ticket)}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteTicket(ticket)}
+                          disabled={deleteTicketMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </TableCell>
