@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,18 +29,31 @@ export default function Tickets() {
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [location] = useLocation();
   
   const { data: tickets = [], isLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets"],
   });
 
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.ticketId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Handle search from URL parameters (from top navigation)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    const searchParam = urlParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [location]);
+
+  const filteredTickets = useMemo(() => {
+    return tickets.filter(ticket => {
+      const matchesSearch = searchQuery === "" || 
+        ticket.ticketId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [tickets, searchQuery, statusFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -96,6 +110,16 @@ export default function Tickets() {
                 className="pl-10"
               />
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1 h-8 px-2"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-48">
@@ -115,50 +139,99 @@ export default function Tickets() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tickets ({filteredTickets.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>
+              Tickets ({filteredTickets.length})
+              {searchQuery && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  - Showing results for "{searchQuery}"
+                </span>
+              )}
+            </CardTitle>
+            {(searchQuery || statusFilter !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket ID</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Assignee</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTickets.map((ticket) => (
-                <TableRow key={ticket.id}>
-                  <TableCell className="font-medium">
-                    {ticket.ticketId}
-                  </TableCell>
-                  <TableCell>{ticket.subject}</TableCell>
-                  <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                  <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                  <TableCell>John Doe</TableCell>
-                  <TableCell>
-                    {new Date(ticket.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Link href={`/tickets/${ticket.ticketId}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Loading tickets...</div>
+            </div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground">
+                {searchQuery || statusFilter !== "all" 
+                  ? "No tickets found matching your search criteria." 
+                  : "No tickets available."}
+              </div>
+              {(searchQuery || statusFilter !== "all") && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ticket ID</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Assignee</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredTickets.map((ticket) => (
+                  <TableRow key={ticket.id}>
+                    <TableCell className="font-medium">
+                      <Link href={`/tickets/${ticket.ticketId}`} className="text-blue-600 hover:underline">
+                        {ticket.ticketId}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{ticket.subject}</TableCell>
+                    <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                    <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                    <TableCell>{ticket.assignee || "Unassigned"}</TableCell>
+                    <TableCell>
+                      {new Date(ticket.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Link href={`/tickets/${ticket.ticketId}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
