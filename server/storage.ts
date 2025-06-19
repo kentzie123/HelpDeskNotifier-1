@@ -270,6 +270,116 @@ export class MemStorage implements IStorage {
     });
     
     this.currentNotificationId = 11;
+    
+    // Add additional sample notifications
+    const additionalNotifications = [
+      {
+        id: 11,
+        userId: 1,
+        title: "New Ticket Assignment",
+        message: "A new ticket (TICK-2025-9940) has been assigned to you from customer Mike Davis.",
+        type: "assignment",
+        isRead: false,
+        ticketId: "TICK-2025-9940",
+        createdAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+      },
+      {
+        id: 12,
+        userId: 1,
+        title: "High Priority Alert",
+        message: "Ticket (TICK-2025-9939) has been escalated to high priority due to customer impact.",
+        type: "priority",
+        isRead: false,
+        ticketId: "TICK-2025-9939",
+        createdAt: new Date(Date.now() - 25 * 60 * 1000), // 25 minutes ago
+      },
+      {
+        id: 13,
+        userId: 1,
+        title: "Status Update",
+        message: "Ticket (TICK-2025-9938) status has been changed from Open to In Progress.",
+        type: "status",
+        isRead: false,
+        ticketId: "TICK-2025-9938",
+        createdAt: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
+      },
+      {
+        id: 14,
+        userId: 1,
+        title: "Customer Response",
+        message: "New response received for ticket (TICK-2025-9937) from customer Jane Smith.",
+        type: "response",
+        isRead: false,
+        ticketId: "TICK-2025-9937",
+        createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000), // 1.5 hours ago
+      },
+      {
+        id: 15,
+        userId: 1,
+        title: "SLA Warning",
+        message: "Ticket (TICK-2025-9936) is approaching SLA deadline in 2 hours.",
+        type: "warning",
+        isRead: false,
+        ticketId: "TICK-2025-9936",
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      },
+      {
+        id: 16,
+        userId: 1,
+        title: "Team Assignment",
+        message: "You have been added to the support team for ticket (TICK-2025-9935).",
+        type: "team",
+        isRead: false,
+        ticketId: "TICK-2025-9935",
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
+      },
+      {
+        id: 17,
+        userId: 1,
+        title: "Resolution Confirmed",
+        message: "Customer has confirmed resolution for ticket (TICK-2025-9934). Ticket closed.",
+        type: "resolution",
+        isRead: false,
+        ticketId: "TICK-2025-9934",
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+      },
+      {
+        id: 18,
+        userId: 1,
+        title: "System Alert",
+        message: "Automated alert: Multiple tickets reported similar issue. Consider creating knowledge base article.",
+        type: "system",
+        isRead: false,
+        ticketId: null,
+        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+      },
+      {
+        id: 19,
+        userId: 1,
+        title: "Performance Review",
+        message: "Your ticket resolution time has improved by 15% this week. Great work!",
+        type: "feedback",
+        isRead: true,
+        ticketId: null,
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+      },
+      {
+        id: 20,
+        userId: 1,
+        title: "Training Reminder",
+        message: "Reminder: Advanced troubleshooting training session scheduled for tomorrow at 2 PM.",
+        type: "reminder",
+        isRead: true,
+        ticketId: null,
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      }
+    ];
+
+    additionalNotifications.forEach(notification => {
+      this.notifications.set(notification.id, notification);
+    });
+    
+    this.currentNotificationId = 21;
   }
 
   async getUser(id: number): Promise<User | undefined> {
