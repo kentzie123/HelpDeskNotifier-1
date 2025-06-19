@@ -21,17 +21,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Eye, Edit, Search } from "lucide-react";
-import type { Ticket } from "@shared/schema";
+import type { TicketWithAssignee } from "@shared/schema";
 import { Link } from "wouter";
 import NewTicketForm from "@/components/forms/NewTicketForm";
+import EditTicketForm from "@/components/forms/EditTicketForm";
 
 export default function Tickets() {
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
+  const [showEditTicketForm, setShowEditTicketForm] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<TicketWithAssignee | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [location] = useLocation();
   
-  const { data: tickets = [], isLoading } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading } = useQuery<TicketWithAssignee[]>({
     queryKey: ["/api/tickets"],
   });
 
@@ -54,6 +57,11 @@ export default function Tickets() {
       return matchesSearch && matchesStatus;
     });
   }, [tickets, searchQuery, statusFilter]);
+
+  const handleEditTicket = (ticket: TicketWithAssignee) => {
+    setEditingTicket(ticket);
+    setShowEditTicketForm(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -222,7 +230,11 @@ export default function Tickets() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditTicket(ticket)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -238,6 +250,15 @@ export default function Tickets() {
       <NewTicketForm 
         open={showNewTicketForm} 
         onOpenChange={setShowNewTicketForm} 
+      />
+
+      <EditTicketForm
+        ticket={editingTicket}
+        open={showEditTicketForm}
+        onOpenChange={(open) => {
+          setShowEditTicketForm(open);
+          if (!open) setEditingTicket(null);
+        }}
       />
     </div>
   );

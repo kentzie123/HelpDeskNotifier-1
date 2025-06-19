@@ -311,11 +311,23 @@ export class MemStorage implements IStorage {
   }
 
   async getTickets(): Promise<Ticket[]> {
-    return Array.from(this.tickets.values());
+    const tickets = Array.from(this.tickets.values());
+    // Add assignee name for frontend compatibility
+    return tickets.map(ticket => ({
+      ...ticket,
+      assignee: ticket.assigneeId ? this.users.get(ticket.assigneeId)?.fullName || null : null
+    })) as any;
   }
 
   async getTicket(ticketId: string): Promise<Ticket | undefined> {
-    return this.tickets.get(ticketId);
+    const ticket = this.tickets.get(ticketId);
+    if (!ticket) return undefined;
+    
+    // Add assignee name for frontend compatibility
+    return {
+      ...ticket,
+      assignee: ticket.assigneeId ? this.users.get(ticket.assigneeId)?.fullName || null : null
+    } as any;
   }
 
   async createTicket(insertTicket: InsertTicket): Promise<Ticket> {

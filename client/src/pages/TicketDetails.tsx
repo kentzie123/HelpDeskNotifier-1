@@ -14,22 +14,24 @@ import {
 import { ArrowLeft, Edit, MessageCircle, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Ticket } from "@shared/schema";
+import type { TicketWithAssignee } from "@shared/schema";
 import { Link } from "wouter";
+import EditTicketForm from "@/components/forms/EditTicketForm";
 
 export default function TicketDetails() {
   const [match, params] = useRoute("/tickets/:id");
+  const [showEditForm, setShowEditForm] = useState(false);
   const ticketId = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: ticket, isLoading } = useQuery<Ticket>({
+  const { data: ticket, isLoading } = useQuery<TicketWithAssignee>({
     queryKey: [`/api/tickets/${ticketId}`],
     enabled: !!ticketId,
   });
 
   const updateTicketMutation = useMutation({
-    mutationFn: ({ ticketId, updates }: { ticketId: string; updates: Partial<Ticket> }) => 
+    mutationFn: ({ ticketId, updates }: { ticketId: string; updates: Partial<TicketWithAssignee> }) => 
       apiRequest("PUT", `/api/tickets/${ticketId}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
@@ -229,7 +231,10 @@ export default function TicketDetails() {
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full">
+              <Button 
+                className="w-full"
+                onClick={() => setShowEditForm(true)}
+              >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Ticket
               </Button>
@@ -245,6 +250,12 @@ export default function TicketDetails() {
           </Card>
         </div>
       </div>
+
+      <EditTicketForm
+        ticket={ticket}
+        open={showEditForm}
+        onOpenChange={setShowEditForm}
+      />
     </div>
   );
 }

@@ -56,5 +56,10 @@ export type User = typeof users.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type Ticket = typeof tickets.$inferSelect;
 
+// Extended ticket type with assignee name for frontend
+export type TicketWithAssignee = Ticket & {
+  assignee?: string | null;
+};
+
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
