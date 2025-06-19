@@ -133,7 +133,20 @@ export default function Notifications() {
           >
             Mark All Read
           </Button>
-          <Button variant="outline">Clear All</Button>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              if (confirm("Are you sure you want to clear all notifications?")) {
+                // Delete all notifications
+                notifications.forEach(notification => {
+                  deleteNotificationMutation.mutate(notification.id);
+                });
+              }
+            }}
+            disabled={deleteNotificationMutation.isPending}
+          >
+            Clear All
+          </Button>
         </div>
       </div>
 

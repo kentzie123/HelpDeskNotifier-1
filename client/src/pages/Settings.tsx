@@ -86,7 +86,12 @@ export default function Settings() {
                   </Select>
                 </div>
                 <div className="pt-4">
-                  <Button>Save Changes</Button>
+                  <Button onClick={() => {
+                    // Mock save functionality
+                    alert("Profile settings saved successfully!");
+                  }}>
+                    Save Changes
+                  </Button>
                 </div>
               </CardContent>
             </Card>

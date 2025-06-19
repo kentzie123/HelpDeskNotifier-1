@@ -1,20 +1,70 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, MessageCircle, Clock } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Edit, MessageCircle, Clock, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Ticket } from "@shared/schema";
 import { Link } from "wouter";
 
 export default function TicketDetails() {
   const [match, params] = useRoute("/tickets/:id");
   const ticketId = params?.id;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: ticket, isLoading } = useQuery<Ticket>({
     queryKey: [`/api/tickets/${ticketId}`],
     enabled: !!ticketId,
   });
+
+  const updateTicketMutation = useMutation({
+    mutationFn: ({ ticketId, updates }: { ticketId: string; updates: Partial<Ticket> }) => 
+      apiRequest("PUT", `/api/tickets/${ticketId}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+      toast({
+        title: "Success",
+        description: "Ticket updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update ticket",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStatusChange = (newStatus: string) => {
+    if (ticketId) {
+      updateTicketMutation.mutate({
+        ticketId,
+        updates: { status: newStatus }
+      });
+    }
+  };
+
+  const handlePriorityChange = (newPriority: string) => {
+    if (ticketId) {
+      updateTicketMutation.mutate({
+        ticketId,
+        updates: { priority: newPriority }
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -122,11 +172,38 @@ export default function TicketDetails() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Status</label>
-                <div className="mt-1">{getStatusBadge(ticket.status)}</div>
+                <Select
+                  value={ticket.status}
+                  onValueChange={handleStatusChange}
+                  disabled={updateTicketMutation.isPending}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Priority</label>
-                <div className="mt-1">{getPriorityBadge(ticket.priority)}</div>
+                <Select
+                  value={ticket.priority}
+                  onValueChange={handlePriorityChange}
+                  disabled={updateTicketMutation.isPending}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Assignee</label>

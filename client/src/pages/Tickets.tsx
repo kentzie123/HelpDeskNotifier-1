@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,13 +11,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Eye, Edit } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Eye, Edit, Search } from "lucide-react";
 import type { Ticket } from "@shared/schema";
 import { Link } from "wouter";
+import NewTicketForm from "@/components/forms/NewTicketForm";
 
 export default function Tickets() {
+  const [showNewTicketForm, setShowNewTicketForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  
   const { data: tickets = [], isLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets"],
+  });
+
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.ticketId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
@@ -55,13 +77,46 @@ export default function Tickets() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">All Tickets</h2>
-        <Button>
+        <Button onClick={() => setShowNewTicketForm(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Ticket
         </Button>
       </div>
 
+      {/* Search and Filter Controls */}
       <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                placeholder="Search tickets by ID, subject, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tickets ({filteredTickets.length})</CardTitle>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -76,7 +131,7 @@ export default function Tickets() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map((ticket) => (
+              {filteredTickets.map((ticket) => (
                 <TableRow key={ticket.id}>
                   <TableCell className="font-medium">
                     {ticket.ticketId}
@@ -106,6 +161,11 @@ export default function Tickets() {
           </Table>
         </CardContent>
       </Card>
+
+      <NewTicketForm 
+        open={showNewTicketForm} 
+        onOpenChange={setShowNewTicketForm} 
+      />
     </div>
   );
 }

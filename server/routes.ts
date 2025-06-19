@@ -83,6 +83,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // Create new ticket
+  app.post("/api/tickets", async (req, res) => {
+    try {
+      const ticket = await storage.createTicket(req.body);
+      res.json(ticket);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  // Update ticket
+  app.put("/api/tickets/:id", async (req, res) => {
+    const ticketId = req.params.id;
+    const updates = req.body;
+    const ticket = await storage.updateTicket(ticketId, updates);
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    res.json(ticket);
+  });
+
+  // Create new user
+  app.post("/api/users", async (req, res) => {
+    try {
+      const user = await storage.createUser(req.body);
+      res.json(user);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create user" });
+    }
+  });
+
+  // Update user
+  app.put("/api/users/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+    const user = await storage.updateUser(id, updates);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  });
+
+  // Delete user
+  app.delete("/api/users/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const deleted = await storage.deleteUser(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ success: true });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

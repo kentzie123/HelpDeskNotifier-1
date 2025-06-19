@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,12 +12,43 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Edit, Trash2, UserCheck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+import NewUserForm from "@/components/forms/NewUserForm";
 
 export default function Users() {
+  const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/users/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteUser = (id: number, fullName: string) => {
+    if (confirm(`Are you sure you want to delete ${fullName}?`)) {
+      deleteUserMutation.mutate(id);
+    }
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -41,7 +73,7 @@ export default function Users() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">User Management</h2>
-        <Button>
+        <Button onClick={() => setShowNewUserForm(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add User
         </Button>
@@ -122,7 +154,13 @@ export default function Users() {
                       <Button variant="ghost" size="sm">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteUser(user.id, user.fullName)}
+                        disabled={deleteUserMutation.isPending}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -133,6 +171,11 @@ export default function Users() {
           </Table>
         </CardContent>
       </Card>
+
+      <NewUserForm 
+        open={showNewUserForm} 
+        onOpenChange={setShowNewUserForm} 
+      />
     </div>
   );
 }
