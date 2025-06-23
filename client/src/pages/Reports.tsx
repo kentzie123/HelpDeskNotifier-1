@@ -300,7 +300,7 @@ export default function Reports() {
                 <span className="text-sm text-muted-foreground">{openTickets} tickets</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(openTickets / totalTickets) * 100}%` }}></div>
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${totalTickets > 0 ? (openTickets / totalTickets) * 100 : 0}%` }}></div>
               </div>
 
               <div className="flex items-center justify-between">
@@ -308,7 +308,7 @@ export default function Reports() {
                 <span className="text-sm text-muted-foreground">{pendingTickets} tickets</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-yellow-600 h-2 rounded-full" style={{ width: `${(pendingTickets / totalTickets) * 100}%` }}></div>
+                <div className="bg-yellow-600 h-2 rounded-full" style={{ width: `${totalTickets > 0 ? (pendingTickets / totalTickets) * 100 : 0}%` }}></div>
               </div>
 
               <div className="flex items-center justify-between">
@@ -316,7 +316,7 @@ export default function Reports() {
                 <span className="text-sm text-muted-foreground">{resolvedTickets} tickets</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${(resolvedTickets / totalTickets) * 100}%` }}></div>
+                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${totalTickets > 0 ? (resolvedTickets / totalTickets) * 100 : 0}%` }}></div>
               </div>
             </div>
           </CardContent>
@@ -372,7 +372,7 @@ export default function Reports() {
                 </div>
                 <div className="text-right">
                   <p className="font-medium text-green-600">{day.resolved} resolved</p>
-                  <p className="text-sm text-muted-foreground">{Math.round((day.resolved / day.tickets) * 100)}% rate</p>
+                  <p className="text-sm text-muted-foreground">{day.tickets > 0 ? Math.round((day.resolved / day.tickets) * 100) : 0}% rate</p>
                 </div>
               </div>
             ))}
