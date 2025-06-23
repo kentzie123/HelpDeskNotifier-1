@@ -94,6 +94,28 @@ export default function Reports() {
     }
   };
 
+  // Helper functions for date calculations
+  const getDaysAgo = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
+  const getStartOfWeek = (date: Date) => {
+    const start = new Date(date);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    start.setDate(diff);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  };
+
+  const isInDateRange = (ticketDate: Date, startDate: Date, endDate: Date) => {
+    return ticketDate >= startDate && ticketDate <= endDate;
+  };
+
+  // Current metrics
   const totalTickets = tickets.length;
   const resolvedTickets = tickets.filter(t => t.status === "resolved").length;
   const pendingTickets = tickets.filter(t => t.status === "in_progress").length;
@@ -101,20 +123,83 @@ export default function Reports() {
   const highPriorityTickets = tickets.filter(t => t.priority === "high").length;
   
   const resolutionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
-  const averageResponseTime = "2.3 hours"; // Mock calculation
+
+  // Calculate average response time
+  const ticketsWithResponse = tickets.filter(t => t.firstResponseAt);
+  const totalResponseTime = ticketsWithResponse.reduce((sum, ticket) => {
+    if (ticket.firstResponseAt) {
+      const responseTime = new Date(ticket.firstResponseAt).getTime() - new Date(ticket.createdAt).getTime();
+      return sum + responseTime;
+    }
+    return sum;
+  }, 0);
   
+  const averageResponseTimeMs = ticketsWithResponse.length > 0 ? totalResponseTime / ticketsWithResponse.length : 0;
+  const averageResponseHours = (averageResponseTimeMs / (1000 * 60 * 60)).toFixed(1);
+  const averageResponseTime = ticketsWithResponse.length > 0 ? `${averageResponseHours} hours` : "No data";
+
+  // Weekly comparisons
+  const now = new Date();
+  const startOfThisWeek = getStartOfWeek(now);
+  const startOfLastWeek = new Date(startOfThisWeek);
+  startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+  const endOfLastWeek = new Date(startOfThisWeek);
+  endOfLastWeek.setTime(startOfThisWeek.getTime() - 1);
+
+  const thisWeekTickets = tickets.filter(t => 
+    new Date(t.createdAt) >= startOfThisWeek && new Date(t.createdAt) <= now
+  );
+  const lastWeekTickets = tickets.filter(t => 
+    new Date(t.createdAt) >= startOfLastWeek && new Date(t.createdAt) <= endOfLastWeek
+  );
+
+  const thisWeekResolved = thisWeekTickets.filter(t => t.status === "resolved").length;
+  const lastWeekResolved = lastWeekTickets.filter(t => t.status === "resolved").length;
+  
+  const thisWeekResolutionRate = thisWeekTickets.length > 0 ? 
+    Math.round((thisWeekResolved / thisWeekTickets.length) * 100) : 0;
+  const lastWeekResolutionRate = lastWeekTickets.length > 0 ? 
+    Math.round((lastWeekResolved / lastWeekTickets.length) * 100) : 0;
+
+  // Yesterday vs today for high priority
+  const yesterday = getDaysAgo(1);
+  const today = getDaysAgo(0);
+  const todayEnd = new Date();
+  
+  const yesterdayHighPriority = tickets.filter(t => {
+    const ticketDate = new Date(t.createdAt);
+    return ticketDate >= yesterday && ticketDate < today && t.priority === "high";
+  }).length;
+
+  // Calculate percentage changes
+  const ticketChangePercent = lastWeekTickets.length > 0 ? 
+    Math.round(((thisWeekTickets.length - lastWeekTickets.length) / lastWeekTickets.length) * 100) : 0;
+  
+  const resolutionRateChange = thisWeekResolutionRate - lastWeekResolutionRate;
+  const highPriorityChange = highPriorityTickets - yesterdayHighPriority;
+
   const agentCount = users.filter(u => u.role === "agent").length;
   const customerCount = users.filter(u => u.role === "customer").length;
 
-  const recentActivity = [
-    { date: "2025-01-20", tickets: 12, resolved: 8 },
-    { date: "2025-01-19", tickets: 15, resolved: 10 },
-    { date: "2025-01-18", tickets: 8, resolved: 7 },
-    { date: "2025-01-17", tickets: 18, resolved: 15 },
-    { date: "2025-01-16", tickets: 22, resolved: 18 },
-    { date: "2025-01-15", tickets: 14, resolved: 12 },
-    { date: "2025-01-14", tickets: 16, resolved: 14 },
-  ];
+  // Generate real weekly activity data
+  const recentActivity = Array.from({ length: 7 }, (_, i) => {
+    const date = getDaysAgo(6 - i);
+    const nextDay = new Date(date);
+    nextDay.setDate(date.getDate() + 1);
+    
+    const dayTickets = tickets.filter(t => {
+      const ticketDate = new Date(t.createdAt);
+      return ticketDate >= date && ticketDate < nextDay;
+    });
+    
+    const dayResolved = dayTickets.filter(t => t.status === "resolved").length;
+    
+    return {
+      date: date.toISOString().split('T')[0],
+      tickets: dayTickets.length,
+      resolved: dayResolved
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -144,7 +229,9 @@ export default function Reports() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">Total Tickets</p>
                 <p className="text-2xl font-bold text-foreground">{totalTickets}</p>
-                <p className="text-xs text-green-600 mt-1">+12% from last week</p>
+                <p className={`text-xs mt-1 ${ticketChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {ticketChangePercent >= 0 ? '+' : ''}{ticketChangePercent}% from last week
+                </p>
               </div>
             </div>
           </CardContent>
@@ -159,7 +246,9 @@ export default function Reports() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">Resolution Rate</p>
                 <p className="text-2xl font-bold text-foreground">{resolutionRate}%</p>
-                <p className="text-xs text-green-600 mt-1">+3% from last week</p>
+                <p className={`text-xs mt-1 ${resolutionRateChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {resolutionRateChange >= 0 ? '+' : ''}{resolutionRateChange}% from last week
+                </p>
               </div>
             </div>
           </CardContent>
@@ -189,7 +278,9 @@ export default function Reports() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">High Priority</p>
                 <p className="text-2xl font-bold text-foreground">{highPriorityTickets}</p>
-                <p className="text-xs text-green-600 mt-1">-2 from yesterday</p>
+                <p className={`text-xs mt-1 ${highPriorityChange <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {highPriorityChange >= 0 ? '+' : ''}{highPriorityChange} from yesterday
+                </p>
               </div>
             </div>
           </CardContent>
@@ -259,7 +350,7 @@ export default function Reports() {
                   <TrendingUp className="h-5 w-5 text-purple-600 mr-3" />
                   <span className="font-medium">Tickets Today</span>
                 </div>
-                <span className="text-lg font-bold">12</span>
+                <span className="text-lg font-bold">{recentActivity[6]?.tickets || 0}</span>
               </div>
             </div>
           </CardContent>

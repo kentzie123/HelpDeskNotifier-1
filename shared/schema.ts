@@ -20,6 +20,8 @@ export const tickets = pgTable("tickets", {
   priority: text("priority").notNull().default("medium"),
   assigneeId: integer("assignee_id").references(() => users.id),
   customerId: integer("customer_id").references(() => users.id),
+  firstResponseAt: timestamp("first_response_at"),
+  resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

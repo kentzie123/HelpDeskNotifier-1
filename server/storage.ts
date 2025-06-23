@@ -120,6 +120,8 @@ export class MemStorage implements IStorage {
         priority: "high",
         assigneeId: 1,
         customerId: 1,
+        firstResponseAt: new Date("2025-01-20T10:30:00Z"),
+        resolvedAt: null,
         createdAt: new Date("2025-01-20T10:00:00Z"),
         updatedAt: new Date("2025-01-20T10:00:00Z"),
       },
@@ -522,6 +524,8 @@ export class MemStorage implements IStorage {
       priority: insertTicket.priority || "medium",
       assigneeId: insertTicket.assigneeId || null,
       customerId: insertTicket.customerId || null,
+      firstResponseAt: insertTicket.firstResponseAt || null,
+      resolvedAt: insertTicket.resolvedAt || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
