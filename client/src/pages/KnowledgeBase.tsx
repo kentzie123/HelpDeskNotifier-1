@@ -25,11 +25,16 @@ export default function KnowledgeBase() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
   const [showNewArticleForm, setShowNewArticleForm] = useState(false);
+  const [showDrafts, setShowDrafts] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: articles = [] } = useQuery<KnowledgeArticleWithAuthor[]>({
-    queryKey: ["/api/knowledge-articles"],
+    queryKey: ["/api/knowledge-articles", showDrafts],
+    queryFn: () => {
+      const params = showDrafts ? "?includeDrafts=true" : "";
+      return fetch(`/api/knowledge-articles${params}`).then(res => res.json());
+    }
   });
 
   const deleteArticleMutation = useMutation({
@@ -50,10 +55,32 @@ export default function KnowledgeBase() {
     },
   });
 
+  const publishArticleMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("PUT", `/api/knowledge-articles/${id}`, { isPublished: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-articles"] });
+      toast({
+        title: "Article published",
+        description: "Article is now visible to all users.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to publish article. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteArticle = (id: number) => {
     if (confirm("Are you sure you want to delete this article?")) {
       deleteArticleMutation.mutate(id);
     }
+  };
+
+  const handlePublishArticle = (id: number) => {
+    publishArticleMutation.mutate(id);
   };
 
   const categories = [
@@ -93,10 +120,18 @@ export default function KnowledgeBase() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">Knowledge Base</h2>
-        <Button onClick={() => setShowNewArticleForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Article
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={showDrafts ? "default" : "outline"}
+            onClick={() => setShowDrafts(!showDrafts)}
+          >
+            {showDrafts ? "Show Published" : "Show Drafts"}
+          </Button>
+          <Button onClick={() => setShowNewArticleForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Article
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -227,6 +262,11 @@ export default function KnowledgeBase() {
                           <Badge className={getCategoryBadge(article.category)}>
                             {article.category}
                           </Badge>
+                          {!article.isPublished && (
+                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                              Draft
+                            </Badge>
+                          )}
                         </div>
                         
                         <p className="text-muted-foreground mb-3">
@@ -269,11 +309,23 @@ export default function KnowledgeBase() {
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {!article.isPublished && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handlePublishArticle(article.id)}
+                            disabled={publishArticleMutation.isPending}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            Publish
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleDeleteArticle(article.id)}
                           disabled={deleteArticleMutation.isPending}
+                          className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

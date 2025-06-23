@@ -154,9 +154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Knowledge Base Articles
   app.get("/api/knowledge-articles", async (req, res) => {
-    const articles = await storage.getKnowledgeArticles();
+    const { includeDrafts } = req.query;
+    const articles = includeDrafts === 'true' 
+      ? Array.from((storage as any).knowledgeArticles.values()).sort((a: any, b: any) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      : await storage.getKnowledgeArticles();
+    
     // Add author names
-    const articlesWithAuthors = await Promise.all(articles.map(async article => {
+    const articlesWithAuthors = await Promise.all(articles.map(async (article: any) => {
       const author = await storage.getUser(article.authorId);
       return {
         ...article,
