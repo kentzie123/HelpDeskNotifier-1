@@ -1,4 +1,4 @@
-import { users, tickets, notifications, type User, type InsertUser, type Ticket, type InsertTicket, type Notification, type InsertNotification } from "@shared/schema";
+import { users, tickets, notifications, knowledgeArticles, type User, type InsertUser, type Ticket, type InsertTicket, type Notification, type InsertNotification, type KnowledgeArticle, type InsertKnowledgeArticle } from "@shared/schema";
 
 export interface IStorage {
   // Users
@@ -23,23 +23,38 @@ export interface IStorage {
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
   deleteNotification(id: number): Promise<boolean>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
+  
+  // Knowledge Articles
+  getKnowledgeArticles(): Promise<KnowledgeArticle[]>;
+  getKnowledgeArticle(id: number): Promise<KnowledgeArticle | undefined>;
+  createKnowledgeArticle(article: InsertKnowledgeArticle): Promise<KnowledgeArticle>;
+  updateKnowledgeArticle(id: number, updates: Partial<KnowledgeArticle>): Promise<KnowledgeArticle | undefined>;
+  deleteKnowledgeArticle(id: number): Promise<boolean>;
+  incrementArticleViews(id: number): Promise<void>;
+  
+  // Reports
+  getTicketsByDateRange(startDate: Date, endDate: Date): Promise<Ticket[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private tickets: Map<string, Ticket>;
   private notifications: Map<number, Notification>;
+  private knowledgeArticles: Map<number, KnowledgeArticle>;
   private currentUserId: number;
   private currentTicketId: number;
   private currentNotificationId: number;
+  private currentArticleId: number;
 
   constructor() {
     this.users = new Map();
     this.tickets = new Map();
     this.notifications = new Map();
+    this.knowledgeArticles = new Map();
     this.currentUserId = 1;
     this.currentTicketId = 1;
     this.currentNotificationId = 1;
+    this.currentArticleId = 1;
     
     this.seedData();
   }
@@ -381,6 +396,61 @@ export class MemStorage implements IStorage {
     });
     
     this.currentNotificationId = 21;
+    
+    // Seed knowledge base articles
+    const sampleArticles: KnowledgeArticle[] = [
+      {
+        id: 1,
+        title: "How to Reset Your Password",
+        content: "# Password Reset Guide\n\n## Steps to Reset Your Password\n\n1. Navigate to the login page\n2. Click 'Forgot Password' link\n3. Enter your email address\n4. Check your email for reset instructions\n5. Click the reset link in the email\n6. Enter your new password\n7. Confirm your new password\n\n## Security Tips\n\n- Use a strong password with at least 8 characters\n- Include uppercase, lowercase, numbers, and symbols\n- Don't reuse passwords from other accounts\n- Consider using a password manager",
+        excerpt: "Step-by-step guide to reset your password safely and securely.",
+        category: "Account Management",
+        authorId: 2,
+        tags: ["password", "security", "account"],
+        views: 1234,
+        rating: 48,
+        ratingCount: 10,
+        isPublished: true,
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 2,
+        title: "Troubleshooting Login Issues",
+        content: "# Login Troubleshooting\n\n## Common Issues and Solutions\n\n### Problem: Invalid credentials\n- Double-check your username and password\n- Ensure caps lock is off\n- Try copying and pasting if typing manually\n\n### Problem: Account locked\n- Wait 15 minutes and try again\n- Contact support if issue persists\n\n### Problem: Browser issues\n- Clear your browser cache and cookies\n- Try a different browser\n- Disable browser extensions temporarily\n\n### Problem: Network connectivity\n- Check your internet connection\n- Try accessing from a different network\n- Contact IT support if on corporate network",
+        excerpt: "Common solutions for login problems and authentication errors.",
+        category: "Technical Support",
+        authorId: 3,
+        tags: ["login", "troubleshooting", "authentication"],
+        views: 892,
+        rating: 46,
+        ratingCount: 10,
+        isPublished: true,
+        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+      {
+        id: 3,
+        title: "Setting Up Two-Factor Authentication",
+        content: "# Two-Factor Authentication Setup\n\n## What is 2FA?\n\nTwo-factor authentication adds an extra layer of security to your account by requiring two forms of verification.\n\n## Setup Steps\n\n1. Log into your account\n2. Go to Security Settings\n3. Click 'Enable 2FA'\n4. Choose your preferred method:\n   - SMS verification\n   - Authenticator app (recommended)\n   - Email verification\n\n## Using Authenticator Apps\n\n1. Download an authenticator app (Google Authenticator, Authy, etc.)\n2. Scan the QR code displayed\n3. Enter the 6-digit code from your app\n4. Save your backup codes in a secure location\n\n## Important Notes\n\n- Keep backup codes safe and accessible\n- Update your phone number if using SMS\n- Test 2FA before fully enabling",
+        excerpt: "Complete guide to enable and configure two-factor authentication.",
+        category: "Security",
+        authorId: 4,
+        tags: ["2fa", "security", "setup"],
+        views: 567,
+        rating: 49,
+        ratingCount: 10,
+        isPublished: true,
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      }
+    ];
+
+    sampleArticles.forEach(article => {
+      this.knowledgeArticles.set(article.id, article);
+    });
+    
+    this.currentArticleId = 4;
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -518,6 +588,62 @@ export class MemStorage implements IStorage {
         this.notifications.set(id, { ...notification, isRead: true });
       }
     }
+  }
+
+  async getKnowledgeArticles(): Promise<KnowledgeArticle[]> {
+    return Array.from(this.knowledgeArticles.values())
+      .filter(article => article.isPublished)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  async getKnowledgeArticle(id: number): Promise<KnowledgeArticle | undefined> {
+    return this.knowledgeArticles.get(id);
+  }
+
+  async createKnowledgeArticle(insertArticle: InsertKnowledgeArticle): Promise<KnowledgeArticle> {
+    const id = this.currentArticleId++;
+    const article: KnowledgeArticle = {
+      ...insertArticle,
+      id,
+      excerpt: insertArticle.excerpt || null,
+      tags: insertArticle.tags || [],
+      views: 0,
+      rating: 0,
+      ratingCount: 0,
+      isPublished: insertArticle.isPublished || false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.knowledgeArticles.set(id, article);
+    return article;
+  }
+
+  async updateKnowledgeArticle(id: number, updates: Partial<KnowledgeArticle>): Promise<KnowledgeArticle | undefined> {
+    const article = this.knowledgeArticles.get(id);
+    if (!article) return undefined;
+    
+    const updatedArticle = { ...article, ...updates, updatedAt: new Date() };
+    this.knowledgeArticles.set(id, updatedArticle);
+    return updatedArticle;
+  }
+
+  async deleteKnowledgeArticle(id: number): Promise<boolean> {
+    return this.knowledgeArticles.delete(id);
+  }
+
+  async incrementArticleViews(id: number): Promise<void> {
+    const article = this.knowledgeArticles.get(id);
+    if (article) {
+      article.views += 1;
+      this.knowledgeArticles.set(id, article);
+    }
+  }
+
+  async getTicketsByDateRange(startDate: Date, endDate: Date): Promise<Ticket[]> {
+    return Array.from(this.tickets.values()).filter(ticket => {
+      const ticketDate = new Date(ticket.createdAt);
+      return ticketDate >= startDate && ticketDate <= endDate;
+    });
   }
 }
 

@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import DateRangePicker from "@/components/forms/DateRangePicker";
 import {
   BarChart3,
   TrendingUp,
@@ -14,13 +17,82 @@ import {
 import type { Ticket, User } from "@shared/schema";
 
 export default function Reports() {
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const { toast } = useToast();
+
+  const queryKey = startDate && endDate 
+    ? ["/api/reports/tickets", startDate.toISOString(), endDate.toISOString()]
+    : ["/api/tickets"];
+
   const { data: tickets = [] } = useQuery<Ticket[]>({
-    queryKey: ["/api/tickets"],
+    queryKey,
+    queryFn: () => {
+      if (startDate && endDate) {
+        const params = new URLSearchParams({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        });
+        return fetch(`/api/reports/tickets?${params}`).then(res => res.json());
+      }
+      return fetch("/api/tickets").then(res => res.json());
+    }
   });
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
+
+  const handleDateRangeChange = (start: Date | null, end: Date | null) => {
+    setStartDate(start);
+    setEndDate(end);
+  };
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    try {
+      const params = new URLSearchParams({ format });
+      if (startDate && endDate) {
+        params.append('startDate', startDate.toISOString());
+        params.append('endDate', endDate.toISOString());
+      }
+
+      const response = await fetch(`/api/reports/export?${params}`);
+      
+      if (format === 'csv') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tickets-export.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tickets-export.json';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+
+      toast({
+        title: "Export completed",
+        description: `Tickets exported as ${format.toUpperCase()} successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Failed to export tickets. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const totalTickets = tickets.length;
   const resolvedTickets = tickets.filter(t => t.status === "resolved").length;
@@ -49,13 +121,14 @@ export default function Reports() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">Reports & Analytics</h2>
         <div className="flex space-x-2">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            Date Range
-          </Button>
-          <Button>
+          <DateRangePicker onDateRangeChange={handleDateRangeChange} />
+          <Button onClick={() => handleExport('csv')}>
             <Download className="mr-2 h-4 w-4" />
-            Export
+            Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => handleExport('json')}>
+            <Download className="mr-2 h-4 w-4" />
+            Export JSON
           </Button>
         </div>
       </div>

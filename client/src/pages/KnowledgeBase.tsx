@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import NewKnowledgeArticleForm from "@/components/forms/NewKnowledgeArticleForm";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Search,
   Plus,
@@ -12,94 +16,58 @@ import {
   Star,
   Clock,
   Tag,
-  Users
+  Users,
+  Trash2
 } from "lucide-react";
-
-const knowledgeBaseArticles = [
-  {
-    id: 1,
-    title: "How to Reset Your Password",
-    category: "Account Management",
-    author: "Sarah Jones",
-    views: 1234,
-    rating: 4.8,
-    lastUpdated: "2025-01-18",
-    tags: ["password", "security", "account"],
-    excerpt: "Step-by-step guide to reset your password safely and securely."
-  },
-  {
-    id: 2,
-    title: "Troubleshooting Login Issues",
-    category: "Technical Support",
-    author: "Mike Brown",
-    views: 892,
-    rating: 4.6,
-    lastUpdated: "2025-01-17",
-    tags: ["login", "troubleshooting", "authentication"],
-    excerpt: "Common solutions for login problems and authentication errors."
-  },
-  {
-    id: 3,
-    title: "Setting Up Two-Factor Authentication",
-    category: "Security",
-    author: "Emily Davis",
-    views: 567,
-    rating: 4.9,
-    lastUpdated: "2025-01-16",
-    tags: ["2fa", "security", "setup"],
-    excerpt: "Complete guide to enable and configure two-factor authentication."
-  },
-  {
-    id: 4,
-    title: "Managing Your Profile Settings",
-    category: "Account Management",
-    author: "John Doe",
-    views: 445,
-    rating: 4.5,
-    lastUpdated: "2025-01-15",
-    tags: ["profile", "settings", "customization"],
-    excerpt: "How to update and customize your profile information and preferences."
-  },
-  {
-    id: 5,
-    title: "Understanding Notification Settings",
-    category: "User Guide",
-    author: "Sarah Jones",
-    views: 678,
-    rating: 4.7,
-    lastUpdated: "2025-01-14",
-    tags: ["notifications", "preferences", "email"],
-    excerpt: "Configure your notification preferences for optimal experience."
-  },
-  {
-    id: 6,
-    title: "API Integration Guide",
-    category: "Developer",
-    author: "Alex Wilson",
-    views: 321,
-    rating: 4.8,
-    lastUpdated: "2025-01-13",
-    tags: ["api", "integration", "developer"],
-    excerpt: "Developer guide for integrating with our platform APIs."
-  }
-];
-
-const categories = [
-  { name: "All Articles", count: 6 },
-  { name: "Account Management", count: 2 },
-  { name: "Technical Support", count: 1 },
-  { name: "Security", count: 1 },
-  { name: "User Guide", count: 1 },
-  { name: "Developer", count: 1 }
-];
+import type { KnowledgeArticleWithAuthor } from "@shared/schema";
 
 export default function KnowledgeBase() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
+  const [showNewArticleForm, setShowNewArticleForm] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const filteredArticles = knowledgeBaseArticles.filter(article => {
+  const { data: articles = [] } = useQuery<KnowledgeArticleWithAuthor[]>({
+    queryKey: ["/api/knowledge-articles"],
+  });
+
+  const deleteArticleMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/knowledge-articles/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-articles"] });
+      toast({
+        title: "Article deleted",
+        description: "Knowledge base article deleted successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete article. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteArticle = (id: number) => {
+    if (confirm("Are you sure you want to delete this article?")) {
+      deleteArticleMutation.mutate(id);
+    }
+  };
+
+  const categories = [
+    { name: "All Articles", count: articles.length },
+    ...Array.from(new Set(articles.map(a => a.category)))
+      .map(category => ({
+        name: category,
+        count: articles.filter(a => a.category === category).length
+      }))
+  ];
+
+  const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (article.excerpt && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())) ||
                          article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === "All Articles" || article.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -116,14 +84,16 @@ export default function KnowledgeBase() {
     return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
-  const totalViews = knowledgeBaseArticles.reduce((sum, article) => sum + article.views, 0);
-  const averageRating = (knowledgeBaseArticles.reduce((sum, article) => sum + article.rating, 0) / knowledgeBaseArticles.length).toFixed(1);
+  const totalViews = articles.reduce((sum, article) => sum + article.views, 0);
+  const averageRating = articles.length > 0 
+    ? (articles.reduce((sum, article) => sum + (article.rating / article.ratingCount || 0), 0) / articles.length).toFixed(1)
+    : "0.0";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">Knowledge Base</h2>
-        <Button>
+        <Button onClick={() => setShowNewArticleForm(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Article
         </Button>
@@ -139,7 +109,7 @@ export default function KnowledgeBase() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">Total Articles</p>
-                <p className="text-2xl font-bold text-foreground">{knowledgeBaseArticles.length}</p>
+                <p className="text-2xl font-bold text-foreground">{articles.length}</p>
               </div>
             </div>
           </CardContent>
@@ -283,11 +253,11 @@ export default function KnowledgeBase() {
                           </span>
                           <span className="flex items-center">
                             <Star className="h-4 w-4 mr-1 text-yellow-500" />
-                            {article.rating}
+                            {article.ratingCount > 0 ? (article.rating / article.ratingCount).toFixed(1) : "0.0"}
                           </span>
                           <span className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
-                            Updated {new Date(article.lastUpdated).toLocaleDateString()}
+                            Updated {new Date(article.updatedAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -299,6 +269,14 @@ export default function KnowledgeBase() {
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteArticle(article.id)}
+                          disabled={deleteArticleMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -308,6 +286,11 @@ export default function KnowledgeBase() {
           </div>
         </div>
       </div>
+
+      <NewKnowledgeArticleForm 
+        open={showNewArticleForm}
+        onOpenChange={setShowNewArticleForm}
+      />
     </div>
   );
 }
