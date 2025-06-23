@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import NewKnowledgeArticleForm from "@/components/forms/NewKnowledgeArticleForm";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,6 +29,9 @@ export default function KnowledgeBase() {
   const [selectedCategory, setSelectedCategory] = useState("All Articles");
   const [showNewArticleForm, setShowNewArticleForm] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
+  const [viewingArticle, setViewingArticle] = useState<KnowledgeArticleWithAuthor | null>(null);
+  const [editingArticle, setEditingArticle] = useState<KnowledgeArticleWithAuthor | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", content: "", excerpt: "", category: "", tags: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -81,6 +87,58 @@ export default function KnowledgeBase() {
 
   const handlePublishArticle = (id: number) => {
     publishArticleMutation.mutate(id);
+  };
+
+  const handleViewArticle = (article: KnowledgeArticleWithAuthor) => {
+    setViewingArticle(article);
+    // Increment view count
+    fetch(`/api/knowledge-articles/${article.id}/view`, { method: 'POST' })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/knowledge-articles"] }));
+  };
+
+  const handleEditArticle = (article: KnowledgeArticleWithAuthor) => {
+    setEditingArticle(article);
+    setEditForm({
+      title: article.title,
+      content: article.content,
+      excerpt: article.excerpt || "",
+      category: article.category,
+      tags: article.tags.join(', ')
+    });
+  };
+
+  const updateArticleMutation = useMutation({
+    mutationFn: (data: { id: number; updates: any }) => 
+      apiRequest("PATCH", `/api/knowledge-articles/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-articles"] });
+      setEditingArticle(null);
+      toast({
+        title: "Article updated",
+        description: "Knowledge base article updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update article. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSaveEdit = () => {
+    if (!editingArticle) return;
+    
+    const updates = {
+      title: editForm.title,
+      content: editForm.content,
+      excerpt: editForm.excerpt,
+      category: editForm.category,
+      tags: editForm.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+    };
+    
+    updateArticleMutation.mutate({ id: editingArticle.id, updates });
   };
 
   const categories = [
@@ -303,10 +361,10 @@ export default function KnowledgeBase() {
                       </div>
                       
                       <div className="flex items-center space-x-2 ml-4">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleViewArticle(article)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditArticle(article)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         {!article.isPublished && (
@@ -343,6 +401,139 @@ export default function KnowledgeBase() {
         open={showNewArticleForm}
         onOpenChange={setShowNewArticleForm}
       />
+
+      {/* View Article Dialog */}
+      <Dialog open={!!viewingArticle} onOpenChange={() => setViewingArticle(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{viewingArticle?.title}</DialogTitle>
+          </DialogHeader>
+          {viewingArticle && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <Badge className={getCategoryBadge(viewingArticle.category)}>
+                  {viewingArticle.category}
+                </Badge>
+                {!viewingArticle.isPublished && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    Draft
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="prose max-w-none">
+                <p className="text-lg text-muted-foreground mb-4">{viewingArticle.excerpt}</p>
+                <div className="whitespace-pre-wrap">{viewingArticle.content}</div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-6">
+                {viewingArticle.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full"
+                  >
+                    <Tag className="h-3 w-3 mr-1" />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <span>By {viewingArticle.author}</span>
+                  <span className="flex items-center">
+                    <Eye className="h-4 w-4 mr-1" />
+                    {viewingArticle.views} views
+                  </span>
+                  <span className="flex items-center">
+                    <Star className="h-4 w-4 mr-1 text-yellow-500" />
+                    {viewingArticle.ratingCount > 0 ? (viewingArticle.rating / viewingArticle.ratingCount).toFixed(1) : "0.0"}
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  Updated {new Date(viewingArticle.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Article Dialog */}
+      <Dialog open={!!editingArticle} onOpenChange={() => setEditingArticle(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Article</DialogTitle>
+          </DialogHeader>
+          {editingArticle && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Title</Label>
+                <Input
+                  id="edit-title"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  placeholder="Article title"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-excerpt">Excerpt</Label>
+                <Textarea
+                  id="edit-excerpt"
+                  value={editForm.excerpt}
+                  onChange={(e) => setEditForm({ ...editForm, excerpt: e.target.value })}
+                  placeholder="Brief description"
+                  rows={2}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-content">Content</Label>
+                <Textarea
+                  id="edit-content"
+                  value={editForm.content}
+                  onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                  placeholder="Article content"
+                  rows={10}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-category">Category</Label>
+                <Input
+                  id="edit-category"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  placeholder="Category"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-tags">Tags (comma separated)</Label>
+                <Input
+                  id="edit-tags"
+                  value={editForm.tags}
+                  onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+                  placeholder="tag1, tag2, tag3"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingArticle(null)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveEdit}
+                  disabled={updateArticleMutation.isPending}
+                >
+                  {updateArticleMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

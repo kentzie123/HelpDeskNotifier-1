@@ -208,6 +208,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(article);
   });
 
+  app.patch("/api/knowledge-articles/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+    const article = await storage.updateKnowledgeArticle(id, updates);
+    if (!article) {
+      return res.status(404).json({ message: "Article not found" });
+    }
+    res.json(article);
+  });
+
+  app.post("/api/knowledge-articles/:id/view", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.incrementArticleViews(id);
+    res.json({ success: true });
+  });
+
   app.delete("/api/knowledge-articles/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const deleted = await storage.deleteKnowledgeArticle(id);
