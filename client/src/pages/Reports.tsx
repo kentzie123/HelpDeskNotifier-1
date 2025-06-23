@@ -189,7 +189,7 @@ export default function Reports() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">High Priority</p>
                 <p className="text-2xl font-bold text-foreground">{highPriorityTickets}</p>
-                <p className="text-xs text-red-600 mt-1">-2 from yesterday</p>
+                <p className="text-xs text-green-600 mt-1">-2 from yesterday</p>
               </div>
             </div>
           </CardContent>
