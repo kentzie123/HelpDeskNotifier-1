@@ -17,10 +17,12 @@ import { apiRequest } from "@/lib/queryClient";
 import type { TicketWithAssignee } from "@shared/schema";
 import { Link, useLocation } from "wouter";
 import EditTicketForm from "@/components/forms/EditTicketForm";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 export default function TicketDetails() {
   const [match, params] = useRoute("/tickets/:id");
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [, setLocation] = useLocation();
   const ticketId = params?.id;
   const { toast } = useToast();
@@ -88,8 +90,13 @@ export default function TicketDetails() {
   });
 
   const handleDeleteTicket = () => {
-    if (ticket && confirm(`Are you sure you want to delete ticket ${ticket.ticketId}? This action cannot be undone.`)) {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteTicket = () => {
+    if (ticket) {
       deleteTicketMutation.mutate(ticket.ticketId);
+      setShowDeleteModal(false);
     }
   };
 
@@ -289,6 +296,16 @@ export default function TicketDetails() {
         ticket={ticket}
         open={showEditForm}
         onOpenChange={setShowEditForm}
+      />
+
+      <DeleteConfirmationModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onConfirm={confirmDeleteTicket}
+        title="Delete Ticket"
+        description="Are you sure you want to delete this support ticket? This will permanently remove the ticket and all associated data."
+        itemName={ticket?.ticketId}
+        isLoading={deleteTicketMutation.isPending}
       />
     </div>
   );

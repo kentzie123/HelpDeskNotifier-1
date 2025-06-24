@@ -23,6 +23,7 @@ import {
   Trash2
 } from "lucide-react";
 import { StarRating } from "@/components/ui/star-rating";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import type { KnowledgeArticleWithAuthor } from "@shared/schema";
 
 export default function KnowledgeBase() {
@@ -33,6 +34,7 @@ export default function KnowledgeBase() {
   const [viewingArticle, setViewingArticle] = useState<KnowledgeArticleWithAuthor | null>(null);
   const [editingArticle, setEditingArticle] = useState<KnowledgeArticleWithAuthor | null>(null);
   const [editForm, setEditForm] = useState({ title: "", content: "", excerpt: "", category: "", tags: "" });
+  const [deleteArticle, setDeleteArticle] = useState<KnowledgeArticleWithAuthor | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -401,7 +403,7 @@ export default function KnowledgeBase() {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => handleDeleteArticle(article.id)}
+                          onClick={() => handleDeleteArticle(article)}
                           disabled={deleteArticleMutation.isPending}
                           className="text-red-600 hover:text-red-800"
                         >
@@ -570,6 +572,17 @@ export default function KnowledgeBase() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={!!deleteArticle}
+        onOpenChange={() => setDeleteArticle(null)}
+        onConfirm={confirmDeleteArticle}
+        title="Delete Knowledge Article"
+        description="Are you sure you want to delete this knowledge base article? This will permanently remove the article and all associated data."
+        itemName={deleteArticle?.title}
+        isLoading={deleteArticleMutation.isPending}
+      />
     </div>
   );
 }

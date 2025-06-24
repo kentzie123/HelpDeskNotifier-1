@@ -16,9 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 import NewUserForm from "@/components/forms/NewUserForm";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 export default function Users() {
   const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -44,9 +46,14 @@ export default function Users() {
     },
   });
 
-  const handleDeleteUser = (id: number, fullName: string) => {
-    if (confirm(`Are you sure you want to delete ${fullName}?`)) {
-      deleteUserMutation.mutate(id);
+  const handleDeleteUser = (user: User) => {
+    setDeleteUser(user);
+  };
+
+  const confirmDeleteUser = () => {
+    if (deleteUser) {
+      deleteUserMutation.mutate(deleteUser.id);
+      setDeleteUser(null);
     }
   };
 
@@ -158,7 +165,7 @@ export default function Users() {
                         variant="ghost" 
                         size="sm" 
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteUser(user.id, user.fullName)}
+                        onClick={() => handleDeleteUser(user)}
                         disabled={deleteUserMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -175,6 +182,16 @@ export default function Users() {
       <NewUserForm 
         open={showNewUserForm} 
         onOpenChange={setShowNewUserForm} 
+      />
+
+      <DeleteConfirmationModal
+        open={!!deleteUser}
+        onOpenChange={() => setDeleteUser(null)}
+        onConfirm={confirmDeleteUser}
+        title="Delete User"
+        description="Are you sure you want to delete this user? This will permanently remove the user account and all associated data."
+        itemName={deleteUser?.fullName}
+        isLoading={deleteUserMutation.isPending}
       />
     </div>
   );

@@ -27,11 +27,13 @@ import type { TicketWithAssignee } from "@shared/schema";
 import { Link } from "wouter";
 import NewTicketForm from "@/components/forms/NewTicketForm";
 import EditTicketForm from "@/components/forms/EditTicketForm";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 export default function Tickets() {
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [showEditTicketForm, setShowEditTicketForm] = useState(false);
   const [editingTicket, setEditingTicket] = useState<TicketWithAssignee | null>(null);
+  const [deleteTicket, setDeleteTicket] = useState<TicketWithAssignee | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [location] = useLocation();
@@ -86,8 +88,13 @@ export default function Tickets() {
   });
 
   const handleDeleteTicket = (ticket: TicketWithAssignee) => {
-    if (confirm(`Are you sure you want to delete ticket ${ticket.ticketId}? This action cannot be undone.`)) {
-      deleteTicketMutation.mutate(ticket.ticketId);
+    setDeleteTicket(ticket);
+  };
+
+  const confirmDeleteTicket = () => {
+    if (deleteTicket) {
+      deleteTicketMutation.mutate(deleteTicket.ticketId);
+      setDeleteTicket(null);
     }
   };
 
@@ -270,8 +277,9 @@ export default function Tickets() {
                           size="sm"
                           onClick={() => handleDeleteTicket(ticket)}
                           disabled={deleteTicketMutation.isPending}
+                          className="text-red-600 hover:text-red-800"
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -295,6 +303,16 @@ export default function Tickets() {
           setShowEditTicketForm(open);
           if (!open) setEditingTicket(null);
         }}
+      />
+
+      <DeleteConfirmationModal
+        open={!!deleteTicket}
+        onOpenChange={() => setDeleteTicket(null)}
+        onConfirm={confirmDeleteTicket}
+        title="Delete Ticket"
+        description="Are you sure you want to delete this support ticket? This will permanently remove the ticket and all associated data."
+        itemName={deleteTicket?.ticketId}
+        isLoading={deleteTicketMutation.isPending}
       />
     </div>
   );

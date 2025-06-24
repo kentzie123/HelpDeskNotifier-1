@@ -93,6 +93,12 @@ This is a modern full-stack helpdesk/customer support management system built us
 - **Port Configuration**: Port 5000 for development, port 80 for production
 - **Static Assets**: Served via Express with Vite integration in development
 
+## Recent Changes
+- January 24, 2025: Added comprehensive delete confirmation modals across all delete operations
+- January 24, 2025: Implemented star rating system for knowledge base articles with user tracking
+- January 24, 2025: Enhanced security by preventing duplicate ratings and tracking user preferences
+- January 24, 2025: Completed migration from Replit Agent to standard Replit environment
+
 ## Changelog
 - June 24, 2025. Initial setup
 
