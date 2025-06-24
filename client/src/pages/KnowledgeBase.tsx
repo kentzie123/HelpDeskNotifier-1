@@ -101,9 +101,14 @@ export default function KnowledgeBase() {
     },
   });
 
-  const handleDeleteArticle = (id: number) => {
-    if (confirm("Are you sure you want to delete this article?")) {
-      deleteArticleMutation.mutate(id);
+  const handleDeleteArticle = (article: KnowledgeArticleWithAuthor) => {
+    setDeleteArticle(article);
+  };
+
+  const confirmDeleteArticle = () => {
+    if (deleteArticle) {
+      deleteArticleMutation.mutate(deleteArticle.id);
+      setDeleteArticle(null);
     }
   };
 
