@@ -53,6 +53,14 @@ export const knowledgeArticles = pgTable("knowledge_articles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const articleRatings = pgTable("article_ratings", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").references(() => knowledgeArticles.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -74,6 +82,11 @@ export const insertKnowledgeArticleSchema = createInsertSchema(knowledgeArticles
   updatedAt: true,
 });
 
+export const insertArticleRatingSchema = createInsertSchema(articleRatings).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -91,7 +104,11 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertKnowledgeArticle = z.infer<typeof insertKnowledgeArticleSchema>;
 export type KnowledgeArticle = typeof knowledgeArticles.$inferSelect;
 
-// Extended knowledge article type with author name for frontend
+export type InsertArticleRating = z.infer<typeof insertArticleRatingSchema>;
+export type ArticleRating = typeof articleRatings.$inferSelect;
+
+// Extended knowledge article type with author name and user rating for frontend
 export type KnowledgeArticleWithAuthor = KnowledgeArticle & {
   author?: string | null;
+  userRating?: number | null;
 };

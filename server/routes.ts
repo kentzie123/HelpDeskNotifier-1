@@ -159,12 +159,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ? Array.from((storage as any).knowledgeArticles.values()).sort((a: any, b: any) => b.updatedAt.getTime() - a.updatedAt.getTime())
       : await storage.getKnowledgeArticles();
     
-    // Add author names
+    // For now, use a mock user ID (1) since authentication isn't fully implemented
+    const userId = 1;
+    
+    // Add author names and user ratings
     const articlesWithAuthors = await Promise.all(articles.map(async (article: any) => {
       const author = await storage.getUser(article.authorId);
+      const userRating = await storage.getUserRatingForArticle(article.id, userId);
       return {
         ...article,
-        author: author?.fullName || null
+        author: author?.fullName || null,
+        userRating
       };
     }));
     res.json(articlesWithAuthors);
@@ -232,8 +237,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
     }
     
+    // For now, use a mock user ID (1) since authentication isn't fully implemented
+    // In a real app, you would get the user ID from the session/JWT token
+    const userId = 1;
+    
     try {
-      await storage.rateKnowledgeArticle(id, rating);
+      await storage.rateKnowledgeArticle(id, userId, rating);
       res.json({ success: true });
     } catch (error) {
       res.status(404).json({ message: "Article not found" });

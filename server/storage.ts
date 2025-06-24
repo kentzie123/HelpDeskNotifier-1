@@ -1,4 +1,19 @@
-import { users, tickets, notifications, knowledgeArticles, type User, type InsertUser, type Ticket, type InsertTicket, type Notification, type InsertNotification, type KnowledgeArticle, type InsertKnowledgeArticle } from "@shared/schema";
+import { 
+  users, 
+  tickets, 
+  notifications, 
+  knowledgeArticles, 
+  type User, 
+  type InsertUser, 
+  type Ticket, 
+  type InsertTicket, 
+  type Notification, 
+  type InsertNotification, 
+  type KnowledgeArticle, 
+  type InsertKnowledgeArticle,
+  type ArticleRating,
+  type InsertArticleRating,
+} from "@shared/schema";
 
 export interface IStorage {
   // Users
@@ -41,20 +56,24 @@ export class MemStorage implements IStorage {
   private tickets: Map<string, Ticket>;
   private notifications: Map<number, Notification>;
   private knowledgeArticles: Map<number, KnowledgeArticle>;
+  private articleRatings: Map<number, ArticleRating>;
   private currentUserId: number;
   private currentTicketId: number;
   private currentNotificationId: number;
   private currentArticleId: number;
+  private currentRatingId: number;
 
   constructor() {
     this.users = new Map();
     this.tickets = new Map();
     this.notifications = new Map();
     this.knowledgeArticles = new Map();
+    this.articleRatings = new Map();
     this.currentUserId = 1;
     this.currentTicketId = 1;
     this.currentNotificationId = 1;
     this.currentArticleId = 1;
+    this.currentRatingId = 1;
     
     this.seedData();
   }
@@ -641,6 +660,49 @@ export class MemStorage implements IStorage {
       article.views += 1;
       this.knowledgeArticles.set(id, article);
     }
+  }
+
+  async rateKnowledgeArticle(articleId: number, userId: number, rating: number): Promise<void> {
+    const article = this.knowledgeArticles.get(articleId);
+    if (!article) {
+      throw new Error("Article not found");
+    }
+    
+    // Check if user has already rated this article
+    const existingRating = Array.from(this.articleRatings.values())
+      .find(r => r.articleId === articleId && r.userId === userId);
+    
+    if (existingRating) {
+      // Update existing rating
+      const oldRating = existingRating.rating;
+      existingRating.rating = rating;
+      this.articleRatings.set(existingRating.id, existingRating);
+      
+      // Update article totals
+      article.rating = article.rating - oldRating + rating;
+    } else {
+      // Create new rating
+      const newRating: ArticleRating = {
+        id: this.currentRatingId++,
+        articleId,
+        userId,
+        rating,
+        createdAt: new Date(),
+      };
+      this.articleRatings.set(newRating.id, newRating);
+      
+      // Update article totals
+      article.rating += rating;
+      article.ratingCount += 1;
+    }
+    
+    this.knowledgeArticles.set(articleId, article);
+  }
+
+  async getUserRatingForArticle(articleId: number, userId: number): Promise<number | null> {
+    const rating = Array.from(this.articleRatings.values())
+      .find(r => r.articleId === articleId && r.userId === userId);
+    return rating ? rating.rating : null;
   }
 
   async rateKnowledgeArticle(id: number, rating: number): Promise<void> {

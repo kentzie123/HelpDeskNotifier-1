@@ -479,10 +479,15 @@ export default function KnowledgeBase() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">Rate this article:</p>
                   <StarRating
-                    rating={0}
+                    rating={viewingArticle.userRating || 0}
                     onRatingChange={(rating) => rateArticleMutation.mutate({ id: viewingArticle.id, rating })}
                     size="lg"
                   />
+                  {viewingArticle.userRating && (
+                    <p className="text-xs text-muted-foreground">
+                      You rated this article {viewingArticle.userRating} star{viewingArticle.userRating !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
