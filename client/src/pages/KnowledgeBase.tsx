@@ -22,6 +22,7 @@ import {
   Users,
   Trash2
 } from "lucide-react";
+import { StarRating } from "@/components/ui/star-rating";
 import type { KnowledgeArticleWithAuthor } from "@shared/schema";
 
 export default function KnowledgeBase() {
@@ -56,6 +57,25 @@ export default function KnowledgeBase() {
       toast({
         title: "Error",
         description: "Failed to delete article. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rateArticleMutation = useMutation({
+    mutationFn: (data: { id: number; rating: number }) => 
+      apiRequest("POST", `/api/knowledge-articles/${data.id}/rate`, { rating: data.rating }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-articles"] });
+      toast({
+        title: "Rating submitted",
+        description: "Thank you for rating this article!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to submit rating. Please try again.",
         variant: "destructive",
       });
     },
@@ -447,12 +467,23 @@ export default function KnowledgeBase() {
                   </span>
                   <span className="flex items-center">
                     <Star className="h-4 w-4 mr-1 text-yellow-500" />
-                    {viewingArticle.ratingCount > 0 ? (viewingArticle.rating / viewingArticle.ratingCount).toFixed(1) : "0.0"}
+                    {viewingArticle.ratingCount > 0 ? (viewingArticle.rating / viewingArticle.ratingCount).toFixed(1) : "0.0"} ({viewingArticle.ratingCount} ratings)
                   </span>
                 </div>
                 <span className="text-sm text-muted-foreground">
                   Updated {new Date(viewingArticle.updatedAt).toLocaleDateString()}
                 </span>
+              </div>
+              
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">Rate this article:</p>
+                  <StarRating
+                    rating={0}
+                    onRatingChange={(rating) => rateArticleMutation.mutate({ id: viewingArticle.id, rating })}
+                    size="lg"
+                  />
+                </div>
               </div>
             </div>
           )}

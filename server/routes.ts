@@ -224,6 +224,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  app.post("/api/knowledge-articles/:id/rate", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { rating } = req.body;
+    
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    }
+    
+    try {
+      await storage.rateKnowledgeArticle(id, rating);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(404).json({ message: "Article not found" });
+    }
+  });
+
   app.delete("/api/knowledge-articles/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const deleted = await storage.deleteKnowledgeArticle(id);

@@ -643,6 +643,18 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async rateKnowledgeArticle(id: number, rating: number): Promise<void> {
+    const article = this.knowledgeArticles.get(id);
+    if (!article) {
+      throw new Error("Article not found");
+    }
+    
+    // Add the new rating to the total and increment count
+    article.rating += rating;
+    article.ratingCount += 1;
+    this.knowledgeArticles.set(id, article);
+  }
+
   async getTicketsByDateRange(startDate: Date, endDate: Date): Promise<Ticket[]> {
     return Array.from(this.tickets.values()).filter(ticket => {
       const ticketDate = new Date(ticket.createdAt);
