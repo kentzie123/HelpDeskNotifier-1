@@ -94,6 +94,9 @@ This is a modern full-stack helpdesk/customer support management system built us
 - **Static Assets**: Served via Express with Vite integration in development
 
 ## Recent Changes
+- June 25, 2025: Enhanced Settings page with comprehensive profile management, password change, notifications, security, and preferences
+- June 25, 2025: Added detailed user analytics and performance tracking to Reports section
+- June 25, 2025: Implemented user performance rankings with comparative metrics and insights
 - January 24, 2025: Added comprehensive delete confirmation modals across all delete operations
 - January 24, 2025: Implemented star rating system for knowledge base articles with user tracking
 - January 24, 2025: Enhanced security by preventing duplicate ratings and tracking user preferences

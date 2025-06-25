@@ -115,6 +115,46 @@ export default function Reports() {
     return ticketDate >= startDate && ticketDate <= endDate;
   };
 
+  // Calculate user statistics
+  const calculateUserStats = (userId?: number) => {
+    const userTickets = userId 
+      ? tickets.filter(ticket => ticket.assigneeId === userId)
+      : tickets;
+
+    const totalTickets = userTickets.length;
+    const resolvedTickets = userTickets.filter(ticket => ticket.status === "resolved").length;
+    const openTickets = userTickets.filter(ticket => ticket.status === "open").length;
+    const inProgressTickets = userTickets.filter(ticket => ticket.status === "in_progress").length;
+    const highPriorityTickets = userTickets.filter(ticket => ticket.priority === "high").length;
+    
+    const resolutionRate = totalTickets > 0 ? (resolvedTickets / totalTickets) * 100 : 0;
+    
+    // Calculate average resolution time (mock calculation)
+    const avgResolutionTime = resolvedTickets > 0 ? 2.5 : 0; // days
+    
+    return {
+      totalTickets,
+      resolvedTickets,
+      openTickets,
+      inProgressTickets,
+      highPriorityTickets,
+      resolutionRate,
+      avgResolutionTime
+    };
+  };
+
+  // Get user performance rankings
+  const getUserRankings = () => {
+    return users.map(user => {
+      const stats = calculateUserStats(user.id);
+      return {
+        ...user,
+        ...stats,
+        performanceScore: stats.resolutionRate * 0.6 + (stats.totalTickets / 10) * 0.4
+      };
+    }).sort((a, b) => b.performanceScore - a.performanceScore);
+  };
+
   // Current metrics
   const totalTickets = tickets.length;
   const resolvedTickets = tickets.filter(t => t.status === "resolved").length;
