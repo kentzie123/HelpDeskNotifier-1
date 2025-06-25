@@ -22,7 +22,7 @@ import {
   Users,
   Trash2
 } from "lucide-react";
-import { StarRating } from "@/components/ui/star-rating";
+import StarRating from "@/components/ui/star-rating";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import type { KnowledgeArticleWithAuthor } from "@shared/schema";
 

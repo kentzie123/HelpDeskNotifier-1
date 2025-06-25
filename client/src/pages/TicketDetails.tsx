@@ -1,311 +1,263 @@
 import { useState } from "react";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Edit, MessageCircle, Clock, CheckCircle, Trash2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ArrowLeft, Calendar, User, Tag, AlertCircle, MessageSquare, Star, Trash2 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { TicketWithAssignee } from "@shared/schema";
-import { Link, useLocation } from "wouter";
-import EditTicketForm from "@/components/forms/EditTicketForm";
-import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import type { TicketWithDetails, TicketCommentWithAuthor } from "@shared/schema";
+import AddCommentForm from "@/components/forms/AddCommentForm";
+import RateTicketForm from "@/components/forms/RateTicketForm";
+import StarRating from "@/components/ui/star-rating";
 
 export default function TicketDetails() {
-  const [match, params] = useRoute("/tickets/:id");
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { id } = useParams();
   const [, setLocation] = useLocation();
-  const ticketId = params?.id;
+  const [showRatingForm, setShowRatingForm] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: ticket, isLoading } = useQuery<TicketWithAssignee>({
-    queryKey: [`/api/tickets/${ticketId}`],
-    enabled: !!ticketId,
+  const { data: ticket, isLoading } = useQuery<TicketWithDetails>({
+    queryKey: ["/api/tickets", id],
+    enabled: !!id,
   });
 
-  const updateTicketMutation = useMutation({
-    mutationFn: ({ ticketId, updates }: { ticketId: string; updates: Partial<TicketWithAssignee> }) => 
-      apiRequest("PUT", `/api/tickets/${ticketId}`, updates),
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: number) => 
+      apiRequest("DELETE", `/api/tickets/${id}/comments/${commentId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets", id] });
       toast({
-        title: "Success",
-        description: "Ticket updated successfully",
+        title: "Comment deleted",
+        description: "The comment has been removed.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to update ticket",
+        description: "Failed to delete comment.",
         variant: "destructive",
       });
     },
   });
-
-  const handleStatusChange = (newStatus: string) => {
-    if (ticketId) {
-      updateTicketMutation.mutate({
-        ticketId,
-        updates: { status: newStatus }
-      });
-    }
-  };
-
-  const handlePriorityChange = (newPriority: string) => {
-    if (ticketId) {
-      updateTicketMutation.mutate({
-        ticketId,
-        updates: { priority: newPriority }
-      });
-    }
-  };
-
-  const deleteTicketMutation = useMutation({
-    mutationFn: (ticketId: string) => apiRequest("DELETE", `/api/tickets/${ticketId}`),
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Ticket deleted successfully",
-      });
-      setLocation("/tickets");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete ticket",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDeleteTicket = () => {
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteTicket = () => {
-    if (ticket) {
-      deleteTicketMutation.mutate(ticket.ticketId);
-      setShowDeleteModal(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "open":
-        return <Badge className="bg-blue-100 text-blue-800">Open</Badge>;
-      case "in_progress":
-        return <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>;
-      case "resolved":
-        return <Badge className="bg-green-100 text-green-800">Resolved</Badge>;
-      case "closed":
-        return <Badge variant="secondary">Closed</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return <Badge variant="destructive">High</Badge>;
-      case "medium":
-        return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
-      case "low":
-        return <Badge className="bg-green-100 text-green-800">Low</Badge>;
-      default:
-        return <Badge variant="secondary">{priority}</Badge>;
-    }
-  };
 
   if (isLoading) {
-    return <div>Loading ticket details...</div>;
+    return (
+      <div className="space-y-4">
+        <div className="h-8 bg-gray-200 rounded animate-pulse" />
+        <div className="h-64 bg-gray-200 rounded animate-pulse" />
+      </div>
+    );
   }
 
   if (!ticket) {
-    return <div>Ticket not found</div>;
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900">Ticket not found</h3>
+        <p className="text-gray-500">The ticket you're looking for doesn't exist.</p>
+      </div>
+    );
   }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high": return "destructive";
+      case "medium": return "default";
+      case "low": return "secondary";
+      default: return "secondary";
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open": return "destructive";
+      case "in_progress": return "default";
+      case "resolved": return "secondary";
+      default: return "secondary";
+    }
+  };
+
+  const handleDeleteComment = (commentId: number) => {
+    if (window.confirm("Are you sure you want to delete this comment?")) {
+      deleteCommentMutation.mutate(commentId);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/tickets">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{ticket.ticketId}</h1>
-            <p className="text-muted-foreground">{ticket.subject}</p>
+      <div className="flex items-center space-x-4">
+        <Button variant="ghost" size="sm" onClick={() => setLocation("/tickets")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Tickets
+        </Button>
+      </div>
+
+      {/* Ticket Details */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-xl">{ticket.subject}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">#{ticket.ticketId}</p>
+            </div>
+            <div className="flex space-x-2">
+              <Badge variant={getStatusColor(ticket.status)}>
+                {ticket.status.replace("_", " ").toUpperCase()}
+              </Badge>
+              <Badge variant={getPriorityColor(ticket.priority)}>
+                {ticket.priority.toUpperCase()} PRIORITY
+              </Badge>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          {getStatusBadge(ticket.status)}
-          {getPriorityBadge(ticket.priority)}
-        </div>
-      </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h4 className="font-medium mb-2">Description</h4>
+            <p className="text-muted-foreground">{ticket.description}</p>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground">{ticket.description}</p>
-            </CardContent>
-          </Card>
+          <Separator />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Comments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium">John Doe</span>
-                    <span className="text-sm text-muted-foreground">2 hours ago</span>
-                  </div>
-                  <p className="text-sm text-foreground">
-                    I've started investigating this issue. It appears to be related to the recent authentication updates.
-                  </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Created:</span>
+                <span className="text-sm text-muted-foreground">{formatDate(ticket.createdAt)}</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Assignee:</span>
+                <span className="text-sm text-muted-foreground">
+                  {ticket.assignee || "Unassigned"}
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Category:</span>
+                <span className="text-sm text-muted-foreground">{ticket.category}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium">Tags:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {ticket.tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
                 </div>
-                <div className="border-l-4 border-green-500 pl-4">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium">System</span>
-                    <span className="text-sm text-muted-foreground">1 hour ago</span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Last Updated:</span>
+                <span className="text-sm text-muted-foreground">{formatDate(ticket.updatedAt)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rating Display for Resolved Tickets */}
+          {ticket.status === "resolved" && ticket.rating && (
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                <span className="font-medium">Customer Rating</span>
+              </div>
+              <div className="flex items-center space-x-4 mb-2">
+                <StarRating rating={ticket.rating.rating} readOnly size="sm" />
+                <span className="text-sm text-muted-foreground">
+                  {ticket.rating.rating}/5 stars
+                </span>
+              </div>
+              {ticket.rating.feedback && (
+                <p className="text-sm text-muted-foreground italic">
+                  "{ticket.rating.feedback}"
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Rate Ticket Button for Resolved Tickets without Rating */}
+          {ticket.status === "resolved" && !ticket.rating && (
+            <div className="flex justify-center">
+              <Button onClick={() => setShowRatingForm(true)}>
+                <Star className="h-4 w-4 mr-2" />
+                Rate This Resolution
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Comments Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <MessageSquare className="h-5 w-5" />
+            <span>Comments ({ticket.comments?.length || 0})</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Comments List */}
+          {ticket.comments && ticket.comments.length > 0 ? (
+            <div className="space-y-4">
+              {ticket.comments.map((comment) => (
+                <div key={comment.id} className="border rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="" alt={comment.author || "User"} />
+                        <AvatarFallback>
+                          {(comment.author || "U").substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{comment.author || "Unknown User"}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</p>
+                      </div>
+                      {comment.isInternal && (
+                        <Badge variant="secondary" className="text-xs">Internal</Badge>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteComment(comment.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <p className="text-sm text-foreground">
-                    Status changed from Open to In Progress
-                  </p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{comment.content}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No comments yet.</p>
+          )}
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
-                <Select
-                  value={ticket.status}
-                  onValueChange={handleStatusChange}
-                  disabled={updateTicketMutation.isPending}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Priority</label>
-                <Select
-                  value={ticket.priority}
-                  onValueChange={handlePriorityChange}
-                  disabled={updateTicketMutation.isPending}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Assignee</label>
-                <p className="mt-1 text-foreground">John Doe</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Created</label>
-                <p className="mt-1 text-foreground">
-                  {new Date(ticket.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                <p className="mt-1 text-foreground">
-                  {new Date(ticket.updatedAt).toLocaleDateString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <Separator />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                className="w-full"
-                onClick={() => setShowEditForm(true)}
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Ticket
-              </Button>
-              <Button 
-                variant="destructive" 
-                className="w-full"
-                onClick={handleDeleteTicket}
-                disabled={deleteTicketMutation.isPending}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {deleteTicketMutation.isPending ? "Deleting..." : "Delete Ticket"}
-              </Button>
-              <Button variant="outline" className="w-full">
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Add Comment
-              </Button>
-              <Button variant="outline" className="w-full">
-                <Clock className="mr-2 h-4 w-4" />
-                Log Time
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          {/* Add Comment Form */}
+          <AddCommentForm ticketId={ticket.ticketId} />
+        </CardContent>
+      </Card>
 
-      <EditTicketForm
-        ticket={ticket}
-        open={showEditForm}
-        onOpenChange={setShowEditForm}
-      />
-
-      <DeleteConfirmationModal
-        open={showDeleteModal}
-        onOpenChange={setShowDeleteModal}
-        onConfirm={confirmDeleteTicket}
-        title="Delete Ticket"
-        description="Are you sure you want to delete this support ticket? This will permanently remove the ticket and all associated data."
-        itemName={ticket?.ticketId}
-        isLoading={deleteTicketMutation.isPending}
+      {/* Rate Ticket Dialog */}
+      <RateTicketForm
+        ticketId={ticket.ticketId}
+        open={showRatingForm}
+        onOpenChange={setShowRatingForm}
       />
     </div>
   );

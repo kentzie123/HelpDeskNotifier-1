@@ -10,7 +10,7 @@ interface StarRatingProps {
   className?: string;
 }
 
-export function StarRating({
+function StarRating({
   rating,
   onRatingChange,
   readonly = false,
@@ -75,3 +75,5 @@ export function StarRating({
     </div>
   );
 }
+
+export default StarRating;

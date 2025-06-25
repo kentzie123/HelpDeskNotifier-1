@@ -20,6 +20,8 @@ export const tickets = pgTable("tickets", {
   priority: text("priority").notNull().default("medium"),
   assigneeId: integer("assignee_id").references(() => users.id),
   customerId: integer("customer_id").references(() => users.id),
+  category: text("category").notNull().default("General"),
+  tags: text("tags").array().default([]).notNull(),
   firstResponseAt: timestamp("first_response_at"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -61,6 +63,24 @@ export const articleRatings = pgTable("article_ratings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const ticketComments = pgTable("ticket_comments", {
+  id: serial("id").primaryKey(),
+  ticketId: text("ticket_id").references(() => tickets.ticketId),
+  userId: integer("user_id").references(() => users.id),
+  content: text("content").notNull(),
+  isInternal: boolean("is_internal").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const ticketRatings = pgTable("ticket_ratings", {
+  id: serial("id").primaryKey(),
+  ticketId: text("ticket_id").references(() => tickets.ticketId),
+  userId: integer("user_id").references(() => users.id),
+  rating: integer("rating").notNull(),
+  feedback: text("feedback"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -83,6 +103,16 @@ export const insertKnowledgeArticleSchema = createInsertSchema(knowledgeArticles
 });
 
 export const insertArticleRatingSchema = createInsertSchema(articleRatings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTicketRatingSchema = createInsertSchema(ticketRatings).omit({
   id: true,
   createdAt: true,
 });
@@ -111,4 +141,20 @@ export type ArticleRating = typeof articleRatings.$inferSelect;
 export type KnowledgeArticleWithAuthor = KnowledgeArticle & {
   author?: string | null;
   userRating?: number | null;
+};
+
+export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
+export type TicketComment = typeof ticketComments.$inferSelect;
+
+export type InsertTicketRating = z.infer<typeof insertTicketRatingSchema>;
+export type TicketRating = typeof ticketRatings.$inferSelect;
+
+export type TicketCommentWithAuthor = TicketComment & {
+  author?: string | null;
+};
+
+export type TicketWithDetails = Ticket & {
+  assignee?: string | null;
+  comments?: TicketCommentWithAuthor[];
+  rating?: TicketRating | null;
 };

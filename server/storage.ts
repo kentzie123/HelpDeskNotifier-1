@@ -13,6 +13,12 @@ import {
   type InsertKnowledgeArticle,
   type ArticleRating,
   type InsertArticleRating,
+  type TicketComment,
+  type InsertTicketComment,
+  type TicketRating,
+  type InsertTicketRating,
+  type TicketCommentWithAuthor,
+  type TicketWithDetails
 } from "@shared/schema";
 
 export interface IStorage {
@@ -49,6 +55,19 @@ export interface IStorage {
   
   // Reports
   getTicketsByDateRange(startDate: Date, endDate: Date): Promise<Ticket[]>;
+  
+  // Ticket Comments
+  getTicketComments(ticketId: string): Promise<TicketCommentWithAuthor[]>;
+  createTicketComment(comment: InsertTicketComment): Promise<TicketComment>;
+  deleteTicketComment(id: number): Promise<boolean>;
+  
+  // Ticket Ratings
+  getTicketRating(ticketId: string): Promise<TicketRating | undefined>;
+  createTicketRating(rating: InsertTicketRating): Promise<TicketRating>;
+  updateTicketRating(ticketId: string, rating: number, feedback?: string): Promise<TicketRating | undefined>;
+  
+  // Enhanced ticket details
+  getTicketWithDetails(ticketId: string): Promise<TicketWithDetails | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -57,11 +76,15 @@ export class MemStorage implements IStorage {
   private notifications: Map<number, Notification>;
   private knowledgeArticles: Map<number, KnowledgeArticle>;
   private articleRatings: Map<number, ArticleRating>;
+  private ticketComments: Map<number, TicketComment>;
+  private ticketRatings: Map<number, TicketRating>;
   private currentUserId: number;
   private currentTicketId: number;
   private currentNotificationId: number;
   private currentArticleId: number;
   private currentRatingId: number;
+  private currentCommentId: number;
+  private currentTicketRatingId: number;
 
   constructor() {
     this.users = new Map();
@@ -69,11 +92,15 @@ export class MemStorage implements IStorage {
     this.notifications = new Map();
     this.knowledgeArticles = new Map();
     this.articleRatings = new Map();
+    this.ticketComments = new Map();
+    this.ticketRatings = new Map();
     this.currentUserId = 1;
     this.currentTicketId = 1;
     this.currentNotificationId = 1;
     this.currentArticleId = 1;
     this.currentRatingId = 1;
+    this.currentCommentId = 1;
+    this.currentTicketRatingId = 1;
     
     this.seedData();
   }
@@ -128,74 +155,134 @@ export class MemStorage implements IStorage {
     });
     this.currentUserId = 6;
 
-    // Create sample tickets
-    const sampleTickets: Ticket[] = [
+    // Create sample tickets with more variety including resolved ones
+    const sampleTickets = [
       {
-        id: 1,
         ticketId: "TICK-2025-9938",
-        subject: "Login issues with new account",
-        description: "User unable to login with newly created account",
-        status: "in_progress",
-        priority: "high",
-        assigneeId: 1,
-        customerId: 1,
-        firstResponseAt: new Date("2025-01-20T10:30:00Z"),
-        resolvedAt: null,
-        createdAt: new Date("2025-01-20T10:00:00Z"),
-        updatedAt: new Date("2025-01-20T10:00:00Z"),
+        subject: "Unable to access dashboard",
+        description: "I'm getting a 404 error when trying to access my dashboard. This started happening after the recent update.",
+        status: "open" as const,
+        priority: "high" as const,
+        customerId: 4,
+        assigneeId: 2,
+        category: "Technical Issue",
+        tags: ["dashboard", "404", "urgent"],
+        createdAt: new Date(),
+        updatedAt: new Date()
       },
       {
-        id: 2,
-        ticketId: "TICK-2025-9937",
-        subject: "Email notifications not working",
-        description: "Email notifications are not being sent to users",
-        status: "open",
-        priority: "medium",
-        assigneeId: 1,
-        customerId: 1,
-        createdAt: new Date("2025-01-19T14:30:00Z"),
-        updatedAt: new Date("2025-01-19T14:30:00Z"),
-      },
-      {
-        id: 3,
-        ticketId: "TICK-2025-9936",
-        subject: "Feature request for dark mode",
-        description: "Request to add dark mode theme to the application",
-        status: "open",
-        priority: "low",
-        assigneeId: 1,
-        customerId: 1,
-        createdAt: new Date("2025-01-18T09:15:00Z"),
-        updatedAt: new Date("2025-01-18T09:15:00Z"),
-      },
-      {
-        id: 4,
-        ticketId: "TICK-2025-9935",
-        subject: "Database connection timeout",
-        description: "Application experiencing database connection timeouts",
-        status: "resolved",
-        priority: "high",
-        assigneeId: 1,
-        customerId: 1,
-        createdAt: new Date("2025-01-17T11:45:00Z"),
-        updatedAt: new Date("2025-01-17T16:30:00Z"),
-      },
-      {
-        id: 5,
-        ticketId: "TICK-2025-9934",
+        ticketId: "TICK-2025-9939",
         subject: "Password reset not working",
-        description: "Users unable to reset their passwords",
-        status: "open",
-        priority: "medium",
+        description: "I've tried to reset my password multiple times but I'm not receiving the reset email.",
+        status: "in_progress" as const,
+        priority: "medium" as const,
+        customerId: 5,
         assigneeId: 1,
-        customerId: 1,
-        createdAt: new Date("2025-01-16T13:20:00Z"),
-        updatedAt: new Date("2025-01-16T13:20:00Z"),
+        category: "Account Issue",
+        tags: ["password", "email", "reset"],
+        createdAt: new Date(Date.now() - 86400000),
+        updatedAt: new Date()
+      },
+      {
+        ticketId: "TICK-2025-9941",
+        subject: "Feature request: Dark mode",
+        description: "Would love to see a dark mode option in the application interface.",
+        status: "resolved" as const,
+        priority: "low" as const,
+        customerId: 4,
+        assigneeId: 2,
+        category: "Feature Request",
+        tags: ["dark-mode", "ui", "enhancement"],
+        createdAt: new Date(Date.now() - 259200000),
+        updatedAt: new Date(Date.now() - 172800000)
+      },
+      {
+        ticketId: "TICK-2025-9943",
+        subject: "Mobile app crashes on startup",
+        description: "The mobile app crashes immediately after opening on iOS 17. This started after the latest app update.",
+        status: "resolved" as const,
+        priority: "high" as const,
+        customerId: 6,
+        assigneeId: 2,
+        category: "Mobile",
+        tags: ["mobile", "crash", "ios"],
+        createdAt: new Date(Date.now() - 345600000),
+        updatedAt: new Date(Date.now() - 259200000)
       }
     ];
 
-    sampleTickets.forEach(ticket => {
+    sampleTickets.forEach(ticketData => {
+      const ticket: Ticket = {
+        id: this.currentTicketId++,
+        ...ticketData
+      };
       this.tickets.set(ticket.ticketId, ticket);
+    });
+
+    // Create sample comments for tickets
+    const sampleComments = [
+      {
+        ticketId: "TICK-2025-9938",
+        userId: 2,
+        content: "I've identified the issue - it seems to be related to a recent server configuration change. Working on a fix now.",
+        isInternal: false,
+        createdAt: new Date(Date.now() - 3600000) // 1 hour ago
+      },
+      {
+        ticketId: "TICK-2025-9940",
+        userId: 1,
+        content: "I've processed the refund for the unauthorized charge. You should see it reflected in your account within 3-5 business days.",
+        isInternal: false,
+        createdAt: new Date(Date.now() - 86400000) // 1 day ago
+      },
+      {
+        ticketId: "TICK-2025-9940",
+        userId: 6,
+        content: "Thank you so much for the quick resolution! The refund has already appeared in my account.",
+        isInternal: false,
+        createdAt: new Date(Date.now() - 82800000) // 23 hours ago
+      }
+    ];
+
+    sampleComments.forEach(commentData => {
+      const comment: TicketComment = {
+        id: this.currentCommentId++,
+        ...commentData
+      };
+      this.ticketComments.set(comment.id, comment);
+    });
+
+    // Create sample ratings for resolved tickets
+    const sampleRatings = [
+      {
+        ticketId: "TICK-2025-9940",
+        userId: 6,
+        rating: 5,
+        feedback: "Excellent service! The issue was resolved quickly and the agent was very helpful.",
+        createdAt: new Date(Date.now() - 82800000) // 23 hours ago
+      },
+      {
+        ticketId: "TICK-2025-9941",
+        userId: 4,
+        rating: 4,
+        feedback: "Good response to the feature request. Looking forward to using dark mode!",
+        createdAt: new Date(Date.now() - 172800000) // 2 days ago
+      },
+      {
+        ticketId: "TICK-2025-9943",
+        userId: 6,
+        rating: 5,
+        feedback: "Amazing turnaround time! The app is working perfectly now.",
+        createdAt: new Date(Date.now() - 259200000) // 3 days ago
+      }
+    ];
+
+    sampleRatings.forEach(ratingData => {
+      const rating: TicketRating = {
+        id: this.currentTicketRatingId++,
+        ...ratingData
+      };
+      this.ticketRatings.set(rating.id, rating);
     });
 
     // Create sample notifications
@@ -722,6 +809,80 @@ export class MemStorage implements IStorage {
       const ticketDate = new Date(ticket.createdAt);
       return ticketDate >= startDate && ticketDate <= endDate;
     });
+  }
+
+  async getTicketComments(ticketId: string): Promise<TicketCommentWithAuthor[]> {
+    const comments = Array.from(this.ticketComments.values())
+      .filter(comment => comment.ticketId === ticketId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    return comments.map(comment => {
+      const author = this.users.get(comment.userId);
+      return {
+        ...comment,
+        author: author?.username || null
+      };
+    });
+  }
+
+  async createTicketComment(insertComment: InsertTicketComment): Promise<TicketComment> {
+    const comment: TicketComment = {
+      id: this.currentCommentId++,
+      ...insertComment,
+      createdAt: new Date()
+    };
+    this.ticketComments.set(comment.id, comment);
+    return comment;
+  }
+
+  async deleteTicketComment(id: number): Promise<boolean> {
+    return this.ticketComments.delete(id);
+  }
+
+  async getTicketRating(ticketId: string): Promise<TicketRating | undefined> {
+    return Array.from(this.ticketRatings.values())
+      .find(rating => rating.ticketId === ticketId);
+  }
+
+  async createTicketRating(insertRating: InsertTicketRating): Promise<TicketRating> {
+    const rating: TicketRating = {
+      id: this.currentTicketRatingId++,
+      ...insertRating,
+      createdAt: new Date()
+    };
+    this.ticketRatings.set(rating.id, rating);
+    return rating;
+  }
+
+  async updateTicketRating(ticketId: string, newRating: number, feedback?: string): Promise<TicketRating | undefined> {
+    const existingRating = Array.from(this.ticketRatings.values())
+      .find(rating => rating.ticketId === ticketId);
+    
+    if (existingRating) {
+      existingRating.rating = newRating;
+      if (feedback !== undefined) {
+        existingRating.feedback = feedback;
+      }
+      this.ticketRatings.set(existingRating.id, existingRating);
+      return existingRating;
+    }
+    return undefined;
+  }
+
+  async getTicketWithDetails(ticketId: string): Promise<TicketWithDetails | undefined> {
+    const ticket = this.tickets.get(ticketId);
+    if (!ticket) return undefined;
+
+    const assignee = ticket.assigneeId ? this.users.get(ticket.assigneeId) : undefined;
+    const comments = await this.getTicketComments(ticketId);
+    const rating = await this.getTicketRating(ticketId);
+
+    return {
+      ...ticket,
+      assignee: assignee?.username || null,
+      comments,
+      rating
+    };
   }
 }
 

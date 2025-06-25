@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNotificationSchema, insertKnowledgeArticleSchema } from "@shared/schema";
+import { insertNotificationSchema, insertKnowledgeArticleSchema, insertTicketCommentSchema, insertTicketRatingSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -33,9 +33,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(tickets);
   });
 
-  // Get single ticket
+  // Get single ticket with details
   app.get("/api/tickets/:id", async (req, res) => {
-    const ticket = await storage.getTicket(req.params.id);
+    const ticket = await storage.getTicketWithDetails(req.params.id);
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
@@ -118,6 +118,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error deleting ticket: ${error}`);
       res.status(500).json({ error: "Failed to delete ticket" });
+    }
+  });
+
+  // Get ticket comments
+  app.get("/api/tickets/:id/comments", async (req, res) => {
+    try {
+      const comments = await storage.getTicketComments(req.params.id);
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  // Add ticket comment
+  app.post("/api/tickets/:id/comments", async (req, res) => {
+    try {
+      const validatedData = insertTicketCommentSchema.parse({
+        ...req.body,
+        ticketId: req.params.id,
+        userId: 1 // Mock current user
+      });
+      const comment = await storage.createTicketComment(validatedData);
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid comment data" });
+    }
+  });
+
+  // Delete ticket comment
+  app.delete("/api/tickets/:ticketId/comments/:commentId", async (req, res) => {
+    try {
+      const success = await storage.deleteTicketComment(parseInt(req.params.commentId));
+      if (!success) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete comment" });
+    }
+  });
+
+  // Get ticket rating
+  app.get("/api/tickets/:id/rating", async (req, res) => {
+    try {
+      const rating = await storage.getTicketRating(req.params.id);
+      res.json(rating || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rating" });
+    }
+  });
+
+  // Rate ticket
+  app.post("/api/tickets/:id/rating", async (req, res) => {
+    try {
+      const validatedData = insertTicketRatingSchema.parse({
+        ...req.body,
+        ticketId: req.params.id,
+        userId: 1 // Mock current user
+      });
+      const rating = await storage.createTicketRating(validatedData);
+      res.status(201).json(rating);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid rating data" });
     }
   });
 

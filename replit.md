@@ -94,6 +94,10 @@ This is a modern full-stack helpdesk/customer support management system built us
 - **Static Assets**: Served via Express with Vite integration in development
 
 ## Recent Changes
+- June 25, 2025: Added comprehensive ticket comment system with internal/external comments and delete functionality
+- June 25, 2025: Implemented ticket rating system for resolved tickets with star ratings and feedback
+- June 25, 2025: Created additional sample tickets including resolved ones with existing ratings and comments
+- June 25, 2025: Enhanced ticket details page with full comment thread and rating display
 - June 25, 2025: Enhanced Settings page with comprehensive profile management, password change, notifications, security, and preferences
 - June 25, 2025: Added detailed user analytics and performance tracking to Reports section
 - June 25, 2025: Implemented user performance rankings with comparative metrics and insights
