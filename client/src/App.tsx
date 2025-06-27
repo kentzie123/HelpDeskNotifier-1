@@ -11,6 +11,7 @@ import Notifications from "@/pages/Notifications";
 import Users from "@/pages/Users";
 import Reports from "@/pages/Reports";
 import KnowledgeBase from "@/pages/KnowledgeBase";
+import ArticleDetails from "@/pages/ArticleDetails";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/users" component={Users} />
         <Route path="/reports" component={Reports} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
+        <Route path="/knowledge-base/:id" component={ArticleDetails} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

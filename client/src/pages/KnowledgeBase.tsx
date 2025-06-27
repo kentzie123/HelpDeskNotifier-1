@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,11 +117,11 @@ export default function KnowledgeBase() {
     publishArticleMutation.mutate(id);
   };
 
+  const [, setLocation] = useLocation();
+
   const handleViewArticle = (article: KnowledgeArticleWithAuthor) => {
-    setViewingArticle(article);
-    // Increment view count
-    fetch(`/api/knowledge-articles/${article.id}/view`, { method: 'POST' })
-      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/knowledge-articles"] }));
+    // Navigate to article details page
+    setLocation(`/knowledge-base/${article.id}`);
   };
 
   const handleEditArticle = (article: KnowledgeArticleWithAuthor) => {

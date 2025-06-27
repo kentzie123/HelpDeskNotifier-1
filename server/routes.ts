@@ -286,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(article);
   });
 
-  app.post("/api/knowledge-articles/:id/view", async (req, res) => {
+  app.post("/api/knowledge-articles/:id/views", async (req, res) => {
     const id = parseInt(req.params.id);
     await storage.incrementArticleViews(id);
     res.json({ success: true });
