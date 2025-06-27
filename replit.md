@@ -94,6 +94,11 @@ This is a modern full-stack helpdesk/customer support management system built us
 - **Static Assets**: Served via Express with Vite integration in development
 
 ## Recent Changes
+- June 27, 2025: Successfully migrated project from Replit Agent to standard Replit environment
+- June 27, 2025: Created dedicated article details page for knowledge base with professional styling
+- June 27, 2025: Added proper routing for individual knowledge articles (/knowledge-base/:id)
+- June 27, 2025: Implemented article view tracking and rating system for knowledge base articles
+- June 27, 2025: Enhanced knowledge base navigation with seamless article browsing experience
 - June 25, 2025: Added comprehensive ticket comment system with internal/external comments and delete functionality
 - June 25, 2025: Implemented ticket rating system for resolved tickets with star ratings and feedback
 - June 25, 2025: Created additional sample tickets including resolved ones with existing ratings and comments
@@ -104,7 +109,6 @@ This is a modern full-stack helpdesk/customer support management system built us
 - January 24, 2025: Added comprehensive delete confirmation modals across all delete operations
 - January 24, 2025: Implemented star rating system for knowledge base articles with user tracking
 - January 24, 2025: Enhanced security by preventing duplicate ratings and tracking user preferences
-- January 24, 2025: Completed migration from Replit Agent to standard Replit environment
 
 ## Changelog
 - June 24, 2025. Initial setup

@@ -117,49 +117,49 @@ export default function ArticleDetails() {
       </div>
 
       {/* Article Header */}
-      <Card className="border-l-4 border-l-blue-500">
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <Badge className={getCategoryColor(article.category)}>
+      <Card className="border-l-4 border-l-blue-500 bg-white">
+        <CardHeader className="pb-6">
+          <div className="space-y-4">
+            {/* Category Badge and Views */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
                   {article.category}
                 </Badge>
-                <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                <div className="flex items-center space-x-1 text-sm text-gray-500">
                   <Eye className="h-4 w-4" />
                   <span>{article.views} views</span>
                 </div>
               </div>
               
-              <CardTitle className="text-2xl font-bold text-gray-900 mb-3">
-                {article.title}
-              </CardTitle>
-
-              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4" />
-                  <span>By {article.author || "Unknown Author"}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Published {formatDate(article.createdAt)}</span>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Updated {formatDate(article.updatedAt)}</span>
-                </div>
+              {/* Star Rating */}
+              <div className="flex items-center space-x-2">
+                <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                <span className="font-semibold text-lg text-gray-900">{article.rating.toFixed(1)}</span>
+                <span className="text-sm text-gray-500">({article.ratingCount} ratings)</span>
               </div>
             </div>
+            
+            {/* Article Title */}
+            <CardTitle className="text-3xl font-bold text-gray-900 leading-tight">
+              {article.title}
+            </CardTitle>
 
-            <div className="flex flex-col items-end space-y-2">
+            {/* Author and Date Info */}
+            <div className="flex items-center space-x-6 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-yellow-500" />
-                <span className="font-medium">{article.rating.toFixed(1)}</span>
-                <span className="text-sm text-muted-foreground">
-                  ({article.ratingCount} ratings)
-                </span>
+                <User className="h-4 w-4" />
+                <span>By {article.author || "Unknown Author"}</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4" />
+                <span>Published {formatDate(article.createdAt)}</span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4" />
+                <span>Updated {formatDate(article.updatedAt)}</span>
               </div>
             </div>
           </div>
