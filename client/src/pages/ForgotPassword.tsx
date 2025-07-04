@@ -208,6 +208,11 @@ export default function ForgotPassword() {
                 >
                   {requestResetMutation.isPending ? "Sending code..." : "Send reset code"}
                 </Button>
+
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium">Demo Account:</p>
+                  <p className="text-xs text-blue-600">Use: admin@email.com</p>
+                </div>
               </form>
             )}
 

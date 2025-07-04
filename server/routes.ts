@@ -54,8 +54,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/forgot-password", async (req, res) => {
     const { email } = req.body;
     
-    // In a real app, you'd verify email exists and send actual email
-    // For demo purposes, we'll just accept any email
+    console.log("Forgot password request for email:", email);
+    
+    // Only accept admin@email.com for demo
+    if (email !== "admin@email.com") {
+      res.status(404).json({ 
+        message: "No account found with this email address" 
+      });
+      return;
+    }
+    
     res.json({ 
       success: true, 
       message: "Password reset code sent to your email" 
