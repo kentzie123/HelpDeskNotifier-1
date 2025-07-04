@@ -5,6 +5,89 @@ import { insertNotificationSchema, insertKnowledgeArticleSchema, insertTicketCom
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    const { email, password } = req.body;
+    
+    // Static authentication - admin@email.com / admin
+    if (email === "admin@email.com" && password === "admin") {
+      // In a real app, you'd create a JWT token or session here
+      res.json({ 
+        success: true, 
+        user: { 
+          id: 1, 
+          email: "admin@email.com", 
+          fullName: "Admin User",
+          role: "admin" 
+        },
+        token: "mock-jwt-token" 
+      });
+    } else {
+      res.status(401).json({ message: "Invalid email or password" });
+    }
+  });
+
+  app.post("/api/auth/signup", async (req, res) => {
+    const { fullName, email, password } = req.body;
+    
+    // In a real app, you'd save to database and send actual email
+    // For demo purposes, we'll just accept the signup
+    res.json({ 
+      success: true, 
+      message: "Account created successfully. Please verify your email." 
+    });
+  });
+
+  app.post("/api/auth/verify-email", async (req, res) => {
+    const { email, code } = req.body;
+    
+    // Static verification code: 123456
+    if (code === "123456") {
+      res.json({ success: true, message: "Email verified successfully" });
+    } else {
+      res.status(400).json({ message: "Invalid verification code" });
+    }
+  });
+
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    const { email } = req.body;
+    
+    // In a real app, you'd verify email exists and send actual email
+    // For demo purposes, we'll just accept any email
+    res.json({ 
+      success: true, 
+      message: "Password reset code sent to your email" 
+    });
+  });
+
+  app.post("/api/auth/verify-reset-code", async (req, res) => {
+    const { email, code } = req.body;
+    
+    // Static verification code: 123456
+    if (code === "123456") {
+      res.json({ success: true, message: "Reset code verified" });
+    } else {
+      res.status(400).json({ message: "Invalid reset code" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    const { email, code, newPassword } = req.body;
+    
+    // Static verification code: 123456
+    if (code === "123456") {
+      // In a real app, you'd update the password in the database
+      res.json({ success: true, message: "Password reset successfully" });
+    } else {
+      res.status(400).json({ message: "Invalid reset code" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    // In a real app, you'd invalidate the token/session
+    res.json({ success: true, message: "Logged out successfully" });
+  });
+
   // Get current user (mock authentication)
   app.get("/api/user", async (req, res) => {
     const user = await storage.getUser(1); // Mock user ID 1

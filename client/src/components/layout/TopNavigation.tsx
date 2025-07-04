@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, Search, Bell, ChevronDown } from "lucide-react";
+import { Menu, Search, Bell, ChevronDown, LogOut, User, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Ticket } from "@shared/schema";
 
 interface TopNavigationProps {
@@ -24,6 +29,7 @@ export default function TopNavigation({
 }: TopNavigationProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: unreadData } = useQuery<{count: number}>({
     queryKey: ["/api/notifications/unread-count"],
@@ -92,18 +98,35 @@ export default function TopNavigation({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground text-sm font-medium">
-                      JD
-                    </span>
-                  </div>
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-blue-600 text-white">
+                      AU
+                    </AvatarFallback>
+                  </Avatar>
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Sign out</DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Admin User</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation("/settings")}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => {
+                    toast({
+                      title: "Logged out",
+                      description: "You have been successfully logged out.",
+                    });
+                    setLocation("/login");
+                  }}
+                  className="text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
