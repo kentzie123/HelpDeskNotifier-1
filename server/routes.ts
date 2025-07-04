@@ -41,8 +41,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/verify-email", async (req, res) => {
     const { email, code } = req.body;
     
+    console.log("Verify email request:", { email, code, codeType: typeof code });
+    
     // Static verification code: 123456
-    if (code === "123456") {
+    if (code === "123456" || code === 123456) {
       res.json({ success: true, message: "Email verified successfully" });
     } else {
       res.status(400).json({ message: "Invalid verification code" });
@@ -63,8 +65,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/verify-reset-code", async (req, res) => {
     const { email, code } = req.body;
     
+    console.log("Verify reset code request:", { email, code, codeType: typeof code });
+    
     // Static verification code: 123456
-    if (code === "123456") {
+    if (code === "123456" || code === 123456) {
       res.json({ success: true, message: "Reset code verified" });
     } else {
       res.status(400).json({ message: "Invalid reset code" });
@@ -74,8 +78,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/reset-password", async (req, res) => {
     const { email, code, newPassword } = req.body;
     
+    console.log("Reset password request:", { email, code, codeType: typeof code });
+    
     // Static verification code: 123456
-    if (code === "123456") {
+    if (code === "123456" || code === 123456) {
       // In a real app, you'd update the password in the database
       res.json({ success: true, message: "Password reset successfully" });
     } else {
