@@ -56,7 +56,7 @@ export default function Signup() {
     },
     onError: (error: any) => {
       console.log("Verification error:", error);
-      setError(error.message || "Invalid verification code");
+      setError("Invalid verification code. Please check the code and try again.");
     },
   });
 

@@ -48,7 +48,7 @@ export default function ForgotPassword() {
       setError("");
     },
     onError: (error: any) => {
-      setError(error.message || "Invalid verification code");
+      setError("Invalid verification code. Please check the code and try again.");
     },
   });
 
@@ -63,7 +63,7 @@ export default function ForgotPassword() {
       setLocation("/login");
     },
     onError: (error: any) => {
-      setError(error.message || "Failed to reset password");
+      setError("Failed to reset password. Please try again.");
     },
   });
 
