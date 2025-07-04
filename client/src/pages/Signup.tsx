@@ -42,9 +42,12 @@ export default function Signup() {
   });
 
   const verifyEmailMutation = useMutation({
-    mutationFn: (data: { email: string; code: string }) =>
-      apiRequest("POST", "/api/auth/verify-email", data),
-    onSuccess: () => {
+    mutationFn: (data: { email: string; code: string }) => {
+      console.log("Frontend sending verification data:", data);
+      return apiRequest("POST", "/api/auth/verify-email", data);
+    },
+    onSuccess: (response) => {
+      console.log("Verification success:", response);
       toast({
         title: "Email verified",
         description: "Your account has been successfully verified. You can now sign in.",
@@ -52,6 +55,7 @@ export default function Signup() {
       setLocation("/login");
     },
     onError: (error: any) => {
+      console.log("Verification error:", error);
       setError(error.message || "Invalid verification code");
     },
   });
@@ -144,8 +148,10 @@ export default function Signup() {
                     placeholder="Enter 6-digit code"
                     value={verificationCode}
                     onChange={(e) => {
-                      setVerificationCode(e.target.value);
+                      const value = e.target.value.trim();
+                      setVerificationCode(value);
                       if (error) setError("");
+                      console.log("Verification code input:", value);
                     }}
                     maxLength={6}
                     className="text-center text-lg tracking-wider"
