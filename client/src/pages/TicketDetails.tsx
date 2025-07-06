@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Calendar, User, Tag, AlertCircle, MessageSquare, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, User, Tag, AlertCircle, MessageSquare, Star, Trash2, Play, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,8 +22,8 @@ export default function TicketDetails() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: ticket, isLoading } = useQuery<TicketWithDetails>({
-    queryKey: ["/api/tickets", id],
+  const { data: ticket, isLoading, error } = useQuery<TicketWithDetails>({
+    queryKey: [`/api/tickets/${id}`],
     enabled: !!id,
   });
 
@@ -31,7 +31,7 @@ export default function TicketDetails() {
     mutationFn: (commentId: number) => 
       apiRequest("DELETE", `/api/tickets/${id}/comments/${commentId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tickets", id] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${id}`] });
       toast({
         title: "Comment deleted",
         description: "The comment has been removed.",
@@ -46,6 +46,26 @@ export default function TicketDetails() {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: (newStatus: string) => 
+      apiRequest("PATCH", `/api/tickets/${id}/status`, { status: newStatus }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+      toast({
+        title: "Status updated",
+        description: "Ticket status has been changed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update ticket status.",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -55,11 +75,26 @@ export default function TicketDetails() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900">Error loading ticket</h3>
+        <p className="text-gray-500">Unable to load ticket details. Please try again.</p>
+        <Button onClick={() => setLocation("/tickets")} className="mt-4">
+          Back to Tickets
+        </Button>
+      </div>
+    );
+  }
+
   if (!ticket) {
     return (
       <div className="text-center py-12">
         <h3 className="text-lg font-medium text-gray-900">Ticket not found</h3>
         <p className="text-gray-500">The ticket you're looking for doesn't exist.</p>
+        <Button onClick={() => setLocation("/tickets")} className="mt-4">
+          Back to Tickets
+        </Button>
       </div>
     );
   }
@@ -121,6 +156,57 @@ export default function TicketDetails() {
           <div>
             <h4 className="font-medium mb-2">Description</h4>
             <p className="text-muted-foreground">{ticket.description || "No description provided"}</p>
+          </div>
+
+          <Separator />
+
+          {/* Status Control Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <h4 className="font-medium mb-2 w-full">Update Status:</h4>
+            {ticket.status !== "in-progress" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateStatusMutation.mutate("in-progress")}
+                disabled={updateStatusMutation.isPending}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Start Progress
+              </Button>
+            )}
+            {ticket.status !== "resolved" && ticket.status !== "closed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateStatusMutation.mutate("resolved")}
+                disabled={updateStatusMutation.isPending}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark Resolved
+              </Button>
+            )}
+            {ticket.status === "resolved" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateStatusMutation.mutate("closed")}
+                disabled={updateStatusMutation.isPending}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Close Ticket
+              </Button>
+            )}
+            {ticket.status === "closed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateStatusMutation.mutate("open")}
+                disabled={updateStatusMutation.isPending}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reopen
+              </Button>
+            )}
           </div>
 
           <Separator />
