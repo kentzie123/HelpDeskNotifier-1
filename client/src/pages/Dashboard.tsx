@@ -10,9 +10,17 @@ import {
 import type { Ticket } from "@shared/schema";
 
 export default function Dashboard() {
-  const { data: tickets = [] } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading, error } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets"],
   });
+
+  if (isLoading) {
+    return <div className="p-6">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-500">Error loading dashboard: {error.message}</div>;
+  }
 
   const totalTickets = tickets.length;
   const resolvedTickets = tickets.filter((t) => t.status === "resolved").length;

@@ -27,22 +27,52 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       
       {/* Main app routes with layout */}
-      <Route path="/">
+      <Route path="/tickets/:id">
         <Layout>
-          <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/tickets" component={Tickets} />
-            <Route path="/tickets/:id" component={TicketDetails} />
-            <Route path="/notifications" component={Notifications} />
-            <Route path="/users" component={Users} />
-            <Route path="/reports" component={Reports} />
-            <Route path="/knowledge-base" component={KnowledgeBase} />
-            <Route path="/knowledge-base/:id" component={ArticleDetails} />
-            <Route path="/settings" component={Settings} />
-            <Route component={NotFound} />
-          </Switch>
+          <TicketDetails />
         </Layout>
       </Route>
+      <Route path="/knowledge-base/:id">
+        <Layout>
+          <ArticleDetails />
+        </Layout>
+      </Route>
+      <Route path="/tickets">
+        <Layout>
+          <Tickets />
+        </Layout>
+      </Route>
+      <Route path="/notifications">
+        <Layout>
+          <Notifications />
+        </Layout>
+      </Route>
+      <Route path="/users">
+        <Layout>
+          <Users />
+        </Layout>
+      </Route>
+      <Route path="/reports">
+        <Layout>
+          <Reports />
+        </Layout>
+      </Route>
+      <Route path="/knowledge-base">
+        <Layout>
+          <KnowledgeBase />
+        </Layout>
+      </Route>
+      <Route path="/settings">
+        <Layout>
+          <Settings />
+        </Layout>
+      </Route>
+      <Route path="/">
+        <Layout>
+          <Dashboard />
+        </Layout>
+      </Route>
+      <Route component={NotFound} />
     </Switch>
   );
 }
