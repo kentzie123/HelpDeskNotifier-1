@@ -64,7 +64,8 @@ export default function TicketDetails() {
     );
   }
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | undefined) => {
+    if (!priority) return "secondary";
     switch (priority) {
       case "high": return "destructive";
       case "medium": return "default";
@@ -73,7 +74,8 @@ export default function TicketDetails() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return "secondary";
     switch (status) {
       case "open": return "destructive";
       case "in_progress": return "default";
@@ -107,10 +109,10 @@ export default function TicketDetails() {
             </div>
             <div className="flex space-x-2">
               <Badge variant={getStatusColor(ticket.status)}>
-                {ticket.status.replace("_", " ").toUpperCase()}
+                {ticket.status ? ticket.status.replace("_", " ").toUpperCase() : "UNKNOWN"}
               </Badge>
               <Badge variant={getPriorityColor(ticket.priority)}>
-                {ticket.priority.toUpperCase()} PRIORITY
+                {ticket.priority ? ticket.priority.toUpperCase() : "UNKNOWN"} PRIORITY
               </Badge>
             </div>
           </div>
