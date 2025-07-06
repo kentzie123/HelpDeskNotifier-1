@@ -104,8 +104,8 @@ export default function TicketDetails() {
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-xl">{ticket.subject}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">#{ticket.ticketId}</p>
+              <CardTitle className="text-xl">{ticket.subject || "No Subject"}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">#{ticket.ticketId || "No ID"}</p>
             </div>
             <div className="flex space-x-2">
               <Badge variant={getStatusColor(ticket.status)}>
@@ -120,7 +120,7 @@ export default function TicketDetails() {
         <CardContent className="space-y-6">
           <div>
             <h4 className="font-medium mb-2">Description</h4>
-            <p className="text-muted-foreground">{ticket.description}</p>
+            <p className="text-muted-foreground">{ticket.description || "No description provided"}</p>
           </div>
 
           <Separator />
@@ -130,7 +130,7 @@ export default function TicketDetails() {
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Created:</span>
-                <span className="text-sm text-muted-foreground">{formatDate(ticket.createdAt)}</span>
+                <span className="text-sm text-muted-foreground">{ticket.createdAt ? formatDate(ticket.createdAt) : "Unknown"}</span>
               </div>
               
               <div className="flex items-center space-x-2">
@@ -144,7 +144,7 @@ export default function TicketDetails() {
               <div className="flex items-center space-x-2">
                 <Tag className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Category:</span>
-                <span className="text-sm text-muted-foreground">{ticket.category}</span>
+                <span className="text-sm text-muted-foreground">{ticket.category || "No category"}</span>
               </div>
             </div>
 
@@ -152,18 +152,22 @@ export default function TicketDetails() {
               <div>
                 <span className="text-sm font-medium">Tags:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {ticket.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
+                  {ticket.tags && ticket.tags.length > 0 ? (
+                    ticket.tags.map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">No tags</span>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Last Updated:</span>
-                <span className="text-sm text-muted-foreground">{formatDate(ticket.updatedAt)}</span>
+                <span className="text-sm text-muted-foreground">{ticket.updatedAt ? formatDate(ticket.updatedAt) : "Unknown"}</span>
               </div>
             </div>
           </div>
@@ -176,12 +180,12 @@ export default function TicketDetails() {
                 <span className="font-medium">Customer Rating</span>
               </div>
               <div className="flex items-center space-x-4 mb-2">
-                <StarRating rating={ticket.rating.rating} readOnly size="sm" />
+                <StarRating rating={ticket.rating?.rating || 0} readOnly size="sm" />
                 <span className="text-sm text-muted-foreground">
-                  {ticket.rating.rating}/5 stars
+                  {ticket.rating?.rating || 0}/5 stars
                 </span>
               </div>
-              {ticket.rating.feedback && (
+              {ticket.rating?.feedback && (
                 <p className="text-sm text-muted-foreground italic">
                   "{ticket.rating.feedback}"
                 </p>
