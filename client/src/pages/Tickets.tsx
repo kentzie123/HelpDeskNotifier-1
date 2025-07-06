@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Search, Trash2 } from "lucide-react";
+import { Plus, Eye, Edit, Search, Trash2, PlayCircle, CheckCircle, XCircle, Clock } from "lucide-react";
 import type { TicketWithAssignee } from "@shared/schema";
 import { Link } from "wouter";
 import NewTicketForm from "@/components/forms/NewTicketForm";
@@ -87,6 +87,26 @@ export default function Tickets() {
     },
   });
 
+  const changeStatusMutation = useMutation({
+    mutationFn: ({ ticketId, status }: { ticketId: string; status: string }) =>
+      apiRequest("PATCH", `/api/tickets/${ticketId}/status`, { status }),
+    onSuccess: (_, { status }) => {
+      const statusText = status.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase());
+      toast({
+        title: "Status Updated",
+        description: `Ticket status changed to ${statusText}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update ticket status",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteTicket = (ticket: TicketWithAssignee) => {
     setDeleteTicket(ticket);
   };
@@ -98,16 +118,20 @@ export default function Tickets() {
     }
   };
 
+  const handleStatusChange = (ticketId: string, status: string) => {
+    changeStatusMutation.mutate({ ticketId, status });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <Badge className="bg-blue-100 text-blue-800">Open</Badge>;
-      case "in_progress":
-        return <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Open</Badge>;
+      case "in-progress":
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">In Progress</Badge>;
       case "resolved":
-        return <Badge className="bg-green-100 text-green-800">Resolved</Badge>;
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Resolved</Badge>;
       case "closed":
-        return <Badge variant="secondary">Closed</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">Closed</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -259,9 +283,60 @@ export default function Tickets() {
                       {new Date(ticket.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
+                        {/* Status Change Actions */}
+                        {ticket.status === "open" && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleStatusChange(ticket.ticketId, "in-progress")}
+                            disabled={changeStatusMutation.isPending}
+                            title="Start Progress"
+                            className="text-yellow-600 hover:text-yellow-800"
+                          >
+                            <PlayCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {ticket.status === "in-progress" && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleStatusChange(ticket.ticketId, "resolved")}
+                            disabled={changeStatusMutation.isPending}
+                            title="Mark Resolved"
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {ticket.status === "resolved" && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleStatusChange(ticket.ticketId, "closed")}
+                            disabled={changeStatusMutation.isPending}
+                            title="Close Ticket"
+                            className="text-gray-600 hover:text-gray-800"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {ticket.status === "closed" && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleStatusChange(ticket.ticketId, "open")}
+                            disabled={changeStatusMutation.isPending}
+                            title="Reopen Ticket"
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Clock className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        {/* Regular Actions */}
                         <Link href={`/tickets/${ticket.ticketId}`}>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" title="View Details">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -269,6 +344,7 @@ export default function Tickets() {
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleEditTicket(ticket)}
+                          title="Edit Ticket"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -278,6 +354,7 @@ export default function Tickets() {
                           onClick={() => handleDeleteTicket(ticket)}
                           disabled={deleteTicketMutation.isPending}
                           className="text-red-600 hover:text-red-800"
+                          title="Delete Ticket"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

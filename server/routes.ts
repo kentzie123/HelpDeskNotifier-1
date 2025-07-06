@@ -194,10 +194,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/tickets/:id", async (req, res) => {
     const ticketId = req.params.id;
     const updates = req.body;
+    
+    // Handle status changes with proper timestamps
+    if (updates.status) {
+      const now = new Date();
+      if (updates.status === "resolved" && !updates.resolvedAt) {
+        updates.resolvedAt = now;
+      }
+      if (updates.status === "in-progress" && !updates.firstResponseAt) {
+        updates.firstResponseAt = now;
+      }
+    }
+    
     const ticket = await storage.updateTicket(ticketId, updates);
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
+    res.json(ticket);
+  });
+
+  // Update ticket status
+  app.patch("/api/tickets/:id/status", async (req, res) => {
+    const ticketId = req.params.id;
+    const { status } = req.body;
+    
+    if (!["open", "in-progress", "resolved", "closed"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    
+    const updates: any = { status };
+    const now = new Date();
+    
+    // Set appropriate timestamps based on status
+    switch (status) {
+      case "in-progress":
+        updates.firstResponseAt = now;
+        break;
+      case "resolved":
+        updates.resolvedAt = now;
+        break;
+    }
+    
+    const ticket = await storage.updateTicket(ticketId, updates);
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    
+    res.json(ticket);
+  });
+
+  // Assign ticket to user
+  app.patch("/api/tickets/:id/assign", async (req, res) => {
+    const ticketId = req.params.id;
+    const { assigneeId } = req.body;
+    
+    const ticket = await storage.updateTicket(ticketId, { assigneeId });
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    
     res.json(ticket);
   });
 

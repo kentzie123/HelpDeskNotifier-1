@@ -167,6 +167,8 @@ export class MemStorage implements IStorage {
         assigneeId: 2,
         category: "Technical Issue",
         tags: ["dashboard", "404", "urgent"],
+        firstResponseAt: null,
+        resolvedAt: null,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -174,7 +176,7 @@ export class MemStorage implements IStorage {
         ticketId: "TICK-2025-9939",
         subject: "Password reset not working",
         description: "I've tried to reset my password multiple times but I'm not receiving the reset email.",
-        status: "in_progress" as const,
+        status: "in-progress" as const,
         priority: "medium" as const,
         customerId: 5,
         assigneeId: 1,
@@ -207,7 +209,21 @@ export class MemStorage implements IStorage {
         category: "Mobile",
         tags: ["mobile", "crash", "ios"],
         createdAt: new Date(Date.now() - 345600000),
-        updatedAt: new Date(Date.now() - 259200000)
+        updatedAt: new Date(Date.now() - 259200000),
+        resolvedAt: new Date(Date.now() - 259200000)
+      },
+      {
+        ticketId: "TICK-2025-9944",
+        subject: "Feature request: Dark mode",
+        description: "It would be great to have a dark mode option for the application interface.",
+        status: "closed" as const,
+        priority: "low" as const,
+        customerId: 5,
+        assigneeId: 3,
+        category: "Feature Request",
+        tags: ["feature", "ui", "dark-mode"],
+        createdAt: new Date(Date.now() - 604800000),
+        updatedAt: new Date(Date.now() - 86400000)
       }
     ];
 
