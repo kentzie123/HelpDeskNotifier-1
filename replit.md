@@ -94,6 +94,10 @@ This is a modern full-stack helpdesk/customer support management system built us
 - **Static Assets**: Served via Express with Vite integration in development
 
 ## Recent Changes
+- January 7, 2025: Added scrollable comments container in ticket details for better UX with multiple comments
+- January 7, 2025: Implemented professional delete confirmation modal for ticket comments with content preview
+- January 7, 2025: Replaced browser confirm dialogs with styled modal dialogs for better user experience
+- January 7, 2025: Added loading states and proper error handling for comment deletion operations
 - January 4, 2025: Implemented complete ticket status management system with In Progress, Resolved, and Closed workflows
 - January 4, 2025: Added status change API endpoints with automatic timestamp tracking for firstResponseAt and resolvedAt
 - January 4, 2025: Enhanced ticket table with contextual status action buttons (Play, Check, Close, Reopen icons)
