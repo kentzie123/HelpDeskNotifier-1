@@ -38,7 +38,7 @@ export default function AddCommentForm({ ticketId, onSuccess }: AddCommentFormPr
     mutationFn: (data: CommentFormData) => 
       apiRequest("POST", `/api/tickets/${ticketId}/comments`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tickets", ticketId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
       form.reset();
       toast({
         title: "Comment added",

@@ -235,21 +235,6 @@ export default function TicketDetails() {
             </div>
 
             <div className="space-y-3">
-              <div>
-                <span className="text-sm font-medium">Tags:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {ticket.tags && ticket.tags.length > 0 ? (
-                    ticket.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">No tags</span>
-                  )}
-                </div>
-              </div>
-
               <div className="flex items-center space-x-2">
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Last Updated:</span>
