@@ -285,9 +285,9 @@ export default function TicketDetails() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Comments List */}
+          {/* Comments List - Scrollable Container */}
           {ticket.comments && ticket.comments.length > 0 ? (
-            <div className="space-y-4">
+            <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
               {ticket.comments.map((comment) => (
                 <div key={comment.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
