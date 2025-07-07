@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { ArrowLeft, Calendar, User, Tag, AlertCircle, MessageSquare, Star, Trash2, Play, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,8 @@ export default function TicketDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [showRatingForm, setShowRatingForm] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<TicketCommentWithAuthor | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -119,9 +122,16 @@ export default function TicketDetails() {
     }
   };
 
-  const handleDeleteComment = (commentId: number) => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      deleteCommentMutation.mutate(commentId);
+  const handleDeleteComment = (comment: TicketCommentWithAuthor) => {
+    setCommentToDelete(comment);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteComment = () => {
+    if (commentToDelete) {
+      deleteCommentMutation.mutate(commentToDelete.id);
+      setDeleteModalOpen(false);
+      setCommentToDelete(null);
     }
   };
 
@@ -309,7 +319,7 @@ export default function TicketDetails() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteComment(comment.id)}
+                      onClick={() => handleDeleteComment(comment)}
                       className="text-red-600 hover:text-red-800"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -335,6 +345,17 @@ export default function TicketDetails() {
         ticketId={ticket.ticketId}
         open={showRatingForm}
         onOpenChange={setShowRatingForm}
+      />
+
+      {/* Delete Comment Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        onConfirm={confirmDeleteComment}
+        title="Delete Comment"
+        description="Are you sure you want to delete this comment? This action cannot be undone."
+        itemName={commentToDelete?.content?.substring(0, 50) + (commentToDelete?.content && commentToDelete.content.length > 50 ? "..." : "")}
+        isLoading={deleteCommentMutation.isPending}
       />
     </div>
   );
