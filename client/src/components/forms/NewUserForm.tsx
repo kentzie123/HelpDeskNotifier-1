@@ -17,10 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const userSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email("Invalid email address"),
-  fullName: z.string().min(1, "Full name is required"),
+  username: z.string().min(3, "Username must be at least 3 characters").max(50, "Username cannot exceed 50 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(50, "Password cannot exceed 50 characters"),
+  email: z.string().email("Invalid email address").max(100, "Email cannot exceed 100 characters"),
+  fullName: z.string().min(1, "Full name is required").max(100, "Full name cannot exceed 100 characters"),
   role: z.enum(["administrator", "agent", "manager", "customer"]),
 });
 
